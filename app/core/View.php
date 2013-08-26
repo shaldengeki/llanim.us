@@ -17,7 +17,6 @@ class View {
     // set default css and js.
     $this->css = [
       ['url' => "//ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css"],
-      ['url' => "/css/bootstrap.min.css"],
       ['url' => "/css/timePicker.css"],
       ['url' => "/css/jquery.countdown.css"],
       ['url' => "/css/jquery.jqplot.min.css"],

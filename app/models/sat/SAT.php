@@ -71,10 +71,10 @@ class SAT extends \Model {
     return $postCounts;
   }
   public function postCounts() {
-    if (!isset($this->terms)) {
-      $this->terms = $this->getPostCounts();
+    if (!isset($this->postCounts)) {
+      $this->postCounts = $this->getPostCounts();
     }
-    return $this->terms;
+    return $this->postCounts;
   }
 
 

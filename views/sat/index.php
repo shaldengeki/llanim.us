@@ -40,8 +40,8 @@
 <?php
   if (isset($sat['authors'])) {
     $authors = [];
-    foreach ($sat['authors'] as $info) {
-      $authors[] = $info['user']->name." (".$info['count'].")";
+    foreach ($sat['authors'] as $author) {
+      $authors[] = $author['link']." (".$author['count'].")";
     }
 ?>
           <p class='sat-authors'>

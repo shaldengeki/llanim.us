@@ -21,9 +21,22 @@ class SATController extends \BaseController {
     $resultView = new \View(joinPaths(\Config::FS_ROOT, "views", "sat", $this->app->action.".php"), ['app' => $this->app]);
     switch ($this->app->action) {
       case 'show':
-        $resultView->attrs['title'] = $object->topic->title;
-        $resultView->attrs['subtitle'] = "(hehe)";
+        $object->load('topic');
+        $header->attrs['title'] = $header->attrs['subtitle'] = $object->topic->title;
 
+        $authors = [];
+        foreach ($object->postCounts() as $userID => $count) {
+          $user = new \ETI\User($this->app, intval($userID));
+          $authors[$userID] = [
+            'user' => $user,
+            'link' => $this->link($user, $resultView, 'show', Null, Null, Null, $user->name),
+            'count' => intval($count)
+          ];
+        }
+        array_sort_by_key($authors, 'count');
+        $resultView->attrs['authors'] = $authors;
+
+        $resultView->attrs['terms'] = $object->getTerms(50);
         break;
       case 'index':
       default:
@@ -56,8 +69,10 @@ class SATController extends \BaseController {
           }
           $authors = [];
           foreach ($sat->getPostCounts(5) as $userID => $count) {
+            $user = new \ETI\User($this->app, intval($userID));
             $authors[$userID] = [
-              'user' => new \ETI\User($this->app, intval($userID)),
+              'user' => $user,
+              'link' => $this->link($user, $resultView, 'show', Null, Null, Null, $user->name),
               'count' => intval($count)
             ];
           }

@@ -40,7 +40,8 @@ abstract class BaseController implements Controller {
     if (is_array($params)) {
       $urlParams = http_build_query($params);
     }
-    return "/".rawurlencode(static::MODEL_URL())."/".($action !== "index" ? rawurlencode($id)."/".rawurlencode($action) : "").($format !== Null ? ".".rawurlencode($format) : "").($params !== Null ? "?".$urlParams : "");
+    $controllerName = get_class($model)."Controller";
+    return "/".rawurlencode($controllerName::MODEL_URL())."/".($action !== "index" ? rawurlencode($id)."/".rawurlencode($action) : "").($format !== Null ? ".".rawurlencode($format) : "").($params !== Null ? "?".$urlParams : "");
   }
   public function link(\Model $model, \View $view, $action="show", $format=Null, array $urlParams=Null, $id=Null, $text="Show", $raw=False, array $params=Null) {
     // returns an HTML link to the current object's profile, with text provided.

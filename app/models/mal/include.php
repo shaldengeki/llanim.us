@@ -6,7 +6,7 @@ $files = [
 ];
 
 foreach ($files as $file) {
-  require_once('app/mal/'.$file);
+  require_once('app/models/mal/'.$file);
 }
 
 ?>

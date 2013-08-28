@@ -184,14 +184,14 @@ class Application {
 
       $this->dbs = $this->_connectDB();
 
-      $fullPreloads = array_map(function($preload) {
-        return joinPaths(Config::FS_ROOT, "app", $preload);
-      }, $preloads);
-      // subdirectories.
-      foreach (glob(joinPaths(Config::FS_ROOT, "app", "*"), GLOB_ONLYDIR) as $subdirectory) {
-        if (!in_array($subdirectory, $fullPreloads)) {
-          $this->_loadDependency(joinPaths($subdirectory, "include.php"));
-        }
+      // models.
+      foreach (glob(joinPaths(Config::FS_ROOT, "app", "models", "*"), GLOB_ONLYDIR) as $subdirectory) {
+        $this->_loadDependency(joinPaths($subdirectory, "include.php"));
+      }
+      
+      // controllers.
+      foreach (glob(joinPaths(Config::FS_ROOT, "app", "controllers", "*.php")) as $controller) {
+        $this->_loadDependency($controller);
       }
     } catch (AppException $e) {
       $this->logger->alert($e);

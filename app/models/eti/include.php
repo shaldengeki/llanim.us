@@ -15,7 +15,7 @@ $files = [
 ];
 
 foreach ($files as $file) {
-  require_once('app/eti/'.$file);
+  require_once('app/models/eti/'.$file);
 }
 
 ?>

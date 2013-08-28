@@ -9,4 +9,3 @@
       <img src='/img/500.png' />
       <p>Something went wrong in the machinery somewhere, and the staff's been notified. Sorry for the inconvenience!</p>
     </div>
-    <div class='col-md-3'>&nbsp;</div>

@@ -107,6 +107,12 @@
         <script type='text/javascript' src='http://pagead2.googlesyndication.com/pagead/show_ads.js'>
         </script>
       </div>
+<?php
+  if (isset($this->attrs['subtitle'])) {
+?>
       <div class="page-header">
         <h1><?php echo $this->escape($this->attrs['subtitle']); ?><?php echo isset($this->attrs['subsubtitle']) ? " <small>".$this->escape($this->attrs['subsubtitle'])."</small>" : ""; ?></h1>
       </div>
+<?php
+  }
+?>

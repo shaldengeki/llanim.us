@@ -1,4 +1,36 @@
 <?php
+namespace MAL;
+
+class MALListController implements \Controller {
+  public $app;
+
+  public static function MODEL_URL() {
+    return 'mal';
+  }
+  public static function MODEL_NAME() {
+    return '\\MAL\\MALList';
+  }
+
+  public function __construct(\Application $app) {
+    $this->app = $app;
+  }
+
+  public function render($object) {
+    $header = \Application::view('header');
+    $footer = \Application::view('footer');
+    $resultView = new \View(joinPaths(\Config::FS_ROOT, "views", "mal", $this->app->action.".php"), ['app' => $this->app]);
+    switch ($this->app->action) {
+      default:
+        break;
+    }
+    return $resultView->prepend($header)->append($footer);
+  }
+
+  public function allow(\ETI\User $user) {
+    return True;
+  }
+}
+
 function parseMALList($username, $type="anime") {
   // hits a MAL list of the given type for the given username.
   // returns an associative array containing the resultant XML, or False if an error occurred.

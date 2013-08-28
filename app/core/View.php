@@ -1,7 +1,7 @@
 <?php
 
 class View {
-  public $filename, $html, $attrs, $css, $preJs, $js, $start;
+  public $filename, $html, $attrs, $css, $preJs, $js, $start, $prependViews, $appendViews;
 
   public function __construct($filename=Null, $attrs=Null) {
     $this->start = microtime(True);
@@ -12,7 +12,7 @@ class View {
       'subtitle' => Null,
       'encoding' => 'UTF-8'
     ];
-    array_merge($this->attrs, $attrs ? $attrs : []);
+    $this->attrs = array_merge($this->attrs, $attrs ? $attrs : []);
 
     // set default css and js.
     $this->css = [
@@ -54,6 +54,8 @@ class View {
       ['url' => "/js/llanimu.js"],
       ['url' => "/js/postFeed.js"]
     ];
+
+    $this->prependViews = $this->appendViews = [];
 
     // if ($video_directory != '') {
     //   $foo = [
@@ -202,16 +204,41 @@ function drawChart() {
     $this->js[] = ['src' => $src];
   }
 
+  public static function joinViews($views) {
+    // returns a string of the rendered HTML for all the included views appended to each other.
+    $result = "";
+    foreach ($views as $view) {
+      $result .= $view->render();
+    }
+    return $result;
+  }
+
+  public function prepend(\View $view) {
+    // appends a view's html to this one.
+    $this->prependViews[] = $view;
+    return $this;
+  }
+
+  public function append(\View $view) {
+    // appends a view's html to this one.
+    $this->appendViews[] = $view;
+    return $this;
+  }
+
   public function html($html=Null) {
     if ($html === Null) {
       // getter.
       if ($this->html === Null) {
-        if ($this->filename !== Null && file_exists($this->filename)) {
-          ob_start();
-          include($this->filename);
-          $this->html = ob_get_clean();
+        if ($this->filename !== Null) {
+          if (file_exists($this->filename)) {
+            ob_start();
+            require($this->filename);
+            $this->html = ob_get_clean();
+          } else {
+            throw new Exception("Could not find view: ".$this->filename);
+          }
         } else {
-          throw new Exception("Could not find view: ".$this->filename);
+          $this->html = "";
         }
       }
       return $this->html;
@@ -222,7 +249,7 @@ function drawChart() {
   }
 
   public function render() {
-    echo $this->html();
+    return \View::joinViews($this->prependViews).$this->html().\View::joinViews($this->appendViews);
   }
 }
 

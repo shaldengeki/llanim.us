@@ -1,7 +1,9 @@
 <?php
 namespace MAL;
 
-class List {
+class MALList extends \Model {
+  public static $DB = "seinma_llanimu";
+
   public static function parse($username, $type="anime") {
     // hits a MAL list of the given type for the given username.
     // returns an associative array containing the resultant XML, or False if an error occurred.

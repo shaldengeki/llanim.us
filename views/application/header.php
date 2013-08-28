@@ -28,7 +28,6 @@
   foreach ($this->preJs as $preJs) {
 ?>
     <script type="text/javascript"<?php echo isset($preJs['url']) ? 'src="'.$preJs['url'].'"' : ""; ?>><?php echo isset($preJs['src']) ? $preJs['src'] : ""; ?></script>
-
 <?php
   }
 ?>
@@ -51,7 +50,8 @@
         <div class="collapse navbar-collapse">
           <ul class="nav navbar-nav">
             <li><a href="http://blog.llanim.us">Blog</a></li>
-            <li class="dropdown">
+            <li><a href="https://animurecs.com">Animurecs</a></li>
+<!--             <li class="dropdown">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown">
                 SAT
                 <b class="caret"></b>
@@ -90,7 +90,7 @@
                 <li><a href="llTrendingTopics.php">Trending topics</a></li>
               </ul>
             </li>
-          </ul>
+ -->          </ul>
         </div>
       </div>
     </div>

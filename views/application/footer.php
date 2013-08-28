@@ -2,7 +2,7 @@
 
       <footer>
           <p id='gen_time' class='pull-left'>Page generation took <?php echo round(microtime(True) - $this->start, 3); ?> seconds.</p>
-          <p class='pull-right'>&copy; Season Anime Topic 2013</p>
+          <p class='pull-right'>&copy; Seasonal Anime Topic 2013</p>
       </footer>
     </div>
 <?php

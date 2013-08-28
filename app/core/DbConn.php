@@ -17,7 +17,7 @@ class DbConn extends PDO {
   //basic database connection class that provides input-escaping and standardized query error output.
   use Loggable;
 
-  public $queryLog;
+  public $queryLog, $lastQuery, $lastParams;
   private $host, $port, $username, $password, $database;
 
   public function __construct($host=Config::DB_HOST, $port=Config::DB_PORT, $username=Config::DB_USERNAME, $password=Config::DB_PASSWORD, $database=Config::DB_NAME, $fetchMode=PDO::FETCH_ASSOC) {
@@ -209,6 +209,9 @@ class DbConn extends PDO {
       if ($this->canLog()) {
         $this->logger->err($query."\nParams: ".print_r($this->params, True));
       }
+      $this->lastQuery = $query;
+      $this->lastParams = $this->params;
+
       $result = $prepQuery->execute($this->params);
     } catch (Exception $e) {
       $exceptionText = "Could not query MySQL database in ".$_SERVER['PHP_SELF'].".\nError: ".print_r($prepQuery->errorInfo(), True)."\nQuery: ".$query."\nParameters: ".print_r($this->params, True);
@@ -244,7 +247,7 @@ class DbConn extends PDO {
     // pulls the first row returned from the query.
     $result = $this->query();
     if (!$result || $result->rowCount() < 1) {
-      throw new DbException("No rows were found matching query: ".$this->queryString());
+      throw new DbException("No rows were found matching query: ".$this->lastQuery."\nParams: ".print_r($this->lastParams, True));
     }
     $returnValue = $result->fetch();
     $result->closeCursor();
@@ -254,7 +257,7 @@ class DbConn extends PDO {
     // pulls the first key from the first row returned by the query.
     $result = $this->firstRow();
     if (!$result || count($result) != 1) {
-      throw new DbException("No rows were found matching query: ".$this->queryString());
+      throw new DbException("No rows were found matching query: ".$this->lastQuery."\nParams: ".print_r($this->lastParams, True));
     }
     $resultKeys = array_keys($result);
     return $result[$resultKeys[0]];
@@ -263,7 +266,7 @@ class DbConn extends PDO {
     // pulls an associative array of columns for the first row returned by the query.
     $result = $this->query();
     if (!$result) {
-      throw new DbException("No rows were found matching query: ".$this->queryString());
+      throw new DbException("No rows were found matching query: ".$this->lastQuery."\nParams: ".print_r($this->lastParams, True));
     }
     if ($result->rowCount() < 1) {
       return [];

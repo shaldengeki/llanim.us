@@ -32,13 +32,13 @@ class Post extends Base {
   ];
   public static $JOINS = [
     'user' => [
-      'obj' => 'User',
+      'obj' => '\\ETI\\User',
       'table' => 'users',
       'own_col' => 'userid',
       'join_col' => 'id'
     ],
     'topic' => [
-      'obj' => 'Topic',
+      'obj' => '\\ETI\\Topic',
       'table' => 'topics',
       'own_col' => 'll_topicid',
       'join_col' => 'll_topicid'
@@ -324,7 +324,7 @@ class Post extends Base {
       $this->load();
     }
     if (!isset($this->user)) {
-      $this->user = new User($this->db,  (int) $this->user_id);
+      $this->user = new User($this->app,  (int) $this->user_id);
     }
     return $this->user;
   }
@@ -334,7 +334,7 @@ class Post extends Base {
       $this->load();
     }
     if (!isset($this->topic)) {
-      $this->topic = new Topic($this->db,  (int) $this->topic_id);
+      $this->topic = new Topic($this->app,  (int) $this->topic_id);
     }
     return $this->topic;
   }
@@ -346,7 +346,7 @@ class Post extends Base {
 
     $contents = "";
     foreach ($this->nodes() as $node) {
-      $contents .= $node->render($this->db);
+      $contents .= $node->render($this->db());
     }
 
     return <<<POST_MARKUP

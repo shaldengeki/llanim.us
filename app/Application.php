@@ -79,10 +79,10 @@ class Application {
     And configuration parameters
     Also serves as DI container (stores database, logger, recommendation engine objects)
   */
-  private $_classes,$_observers,$messages=[],$timings=[], $_statsdConn;
+  private $_classes=[],$_controllers=[],$_observers,$messages=[],$timings=[], $_statsdConn;
   // protected $totalPoints=Null;
   // public $achievements=[];
-  public $statsd, $logger, $cache, $dbConn, $mailer, $serverTimeZone, $outputTimeZone, $user, $target, $startRender, $csrfToken=Null;
+  public $statsd, $logger, $cache, $dbs, $mailer, $serverTimeZone, $outputTimeZone, $user, $target, $startRender, $csrfToken=Null;
 
   public $model,$action,$status,$class="";
   public $id=0;
@@ -127,10 +127,13 @@ class Application {
     return $this->cache;
   }
   private function _connectDB() {
-    if ($this->dbConn === Null) {
-      $this->dbConn = new DbConn();
+    if ($this->dbs === Null) {
+      $this->dbs = [];
+      foreach (Config::$DB_NAMES as $accessor=>$name) {
+        $this->dbs[$accessor] = new DbConn(Config::DB_HOST, Config::DB_PORT, Config::DB_USERNAME, Config::DB_PASSWORD, $name);
+      }
     }
-    return $this->dbConn;
+    return $this->dbs;
   }
   private function _connectMailer() {
     if ($this->mailer === Null) {
@@ -179,6 +182,8 @@ class Application {
       }
       $nonLinkedClasses = count(get_declared_classes());
 
+      $this->dbs = $this->_connectDB();
+
       $fullPreloads = array_map(function($preload) {
         return joinPaths(Config::FS_ROOT, "app", $preload);
       }, $preloads);
@@ -190,18 +195,17 @@ class Application {
       }
     } catch (AppException $e) {
       $this->logger->alert($e);
-      $this->display_error(500);
+      \Application::display_error(500);
     }
 
     session_set_cookie_params(0, '/', '.llanim.us', True, True);
     session_start();
 
-    // _classes is a modelUrl:modelName mapping for classes that are to be linked.
+    // _controllers is a modelUrl:controller mapping for controllers.
     foreach (get_declared_classes() as $className) {
-      if (method_exists($className, 'MODEL_URL')) {
-        if (!isset($this->_classes[$className::MODEL_URL()])) {
-          $this->_classes[$className::MODEL_URL()] = $className;
-        }
+      $interfaces = class_implements($className);
+      if (isset($interfaces['Controller'])) {
+        $this->_controllers[$className::MODEL_URL()] = new $className($this);
       }
     }
 
@@ -214,7 +218,7 @@ class Application {
     //   }
     // } catch (AppException $e) {
     //   $this->logger->alert($e);
-    //   $this->display_error(500);
+    //   \Application::display_error(500);
     // }
     // $achievementSlice = array_slice(get_declared_classes(), $nonAchievementClasses);
     // foreach ($achievementSlice as $achievementName) {
@@ -321,20 +325,26 @@ class Application {
     }
   }
 
-  public function display_error($code) {
+  public static function display_error($code) {
     http_response_code(intval($code));
-    echo $this->view('header')->render().$this->view(intval($code))->render().$this->view('footer')->render();
+    $view = \Application::view('header');
+    echo $view->append(\Application::view(intval($code)))
+              ->append(\Application::view('footer'))
+              ->render();
     exit;
   }
-  public function display_exception($e) {
+  public static function display_exception($e) {
     // formats a (subclassed) instance of AppException for display to the end user.
-    echo $this->view('header')->render().$this->view('exception', ['exception' => $e])->render().$this->view('footer')->render();
+    $view = \Application::view('header');
+    echo $view->append(\Application::view('exception', ['exception' => $e]))
+              ->append(\Application::view('footer'))
+              ->render();
     exit;
   }
-  public function check_partial_include($filename) {
+  public static function check_partial_include($filename) {
     // displays the standard 404 page if the user is requesting a partial directly.
     if (str_replace("\\", "/", $filename) === $_SERVER['SCRIPT_FILENAME']) {
-      $this->display_error(404);
+      \Application::display_error(404);
     }
   }
 
@@ -437,13 +447,13 @@ class Application {
     $this->statsd->increment("hits");
 
     if (isset($_SESSION['id']) && is_numeric($_SESSION['id'])) {
-      $this->user = new User($this, intval($_SESSION['id']));
+      $this->user = new \ETI\User($this->dbs['ETI'], intval($_SESSION['id']));
       // if user has not recently been active, update their last-active.
       if (!$this->user->isCurrentlyActive()) {
         $this->user->updateLastActive();
       }
     } else {
-      $this->user = new User($this, 0);
+      $this->user = new \ETI\User($this, 0);
     }
 
     // check to see if this request is being made via ajax.
@@ -457,7 +467,7 @@ class Application {
       $this->csrfToken = $this->_generateCSRFToken();
       // if request came in through AJAX, or there isn't a POST, don't run CSRF filter.
       if (!$this->ajax && !empty($_POST) && !$this->checkCSRF()) {
-        $this->display_error(403);
+        \Application::display_error(403);
       }
     }
 
@@ -469,9 +479,18 @@ class Application {
       $this->class = $_REQUEST['class'];
     }
 
-    if (isset($_REQUEST['model']) && isset($this->_classes[$_REQUEST['model']])) {
-      $this->model = $this->_classes[$_REQUEST['model']];
+    if (isset($_REQUEST['controller']) && isset($this->_controllers[$_REQUEST['controller']])) {
+      $this->controller = $this->_controllers[$_REQUEST['controller']];
+    } elseif (!isset($_REQUEST['controller']) || $_REQUEST['controller'] === "") {
+      $this->controller = $this->_controllers['mal'];
+    } else {
+      $this->delayedMessage("This thing doesn't exist!", "error");
+      $this->logger->err("Controller doesn't exist: ".$_REQUEST['controller']."\n".print_r(array_keys($this->_controllers), True));
+      $this->redirect($this->user->url());
     }
+    $controllerName = get_class($this->controller);
+    $this->model = $controllerName::MODEL_NAME();
+
     if (isset($_REQUEST['id'])) {
       if (is_numeric($_REQUEST['id'])) {
         $this->id = intval($_REQUEST['id']);
@@ -499,60 +518,44 @@ class Application {
       $this->format = escape_output($_REQUEST['format']);
     }
 
-    if (isset($this->model) && $this->model !== "") {
-      if (!class_exists($this->model)) {
-        $this->delayedMessage("This thing doesn't exist!", "error");
-        $this->redirect($this->user->url());
-      }
-
-      try {
-        // kludge to allow model names in URLs.
-        if (($this->model === "User" || $this->model === "Thread") && $this->id !== "") {
-          $this->target = new $this->model($this, Null, rawurldecode($this->id));
-        } else {
-          $this->target = new $this->model($this, intval($this->id));
-        }
-      } catch (DbException $e) {
-        $this->statsd->increment("DbException");
-        $this->display_error(404);
-      }
-      if ($this->target->id !== 0) {
-        try {
-          $foo = $this->target->getInfo();
-        } catch (DbException $e) {
-          $this->statsd->increment("DbException");
-          $blankModel = new $this->model($this);
-          $this->delayedMessage("The ".strtolower($this->model)." you specified does not exist.", "error");
-          $this->redirect($blankModel->url("index"));
-        }
-      } elseif ($this->action === "edit") {
-        $this->action = "new";
-      }
-      if (!$this->target->allow($this->user, $this->action)) {
-        $targetClass = get_class($this->target);
-        $error = new AppException($this, $this->user->username." attempted to ".$this->action." ".$targetClass::MODEL_NAME()." ID#".$this->target->id);
-        $this->logger->warning($error->__toString());
-        $this->display_error(403);
+    try {
+      // kludge to allow model names in URLs.
+      if (($this->model === "User" || $this->model === "Thread") && $this->id !== "") {
+        $this->target = new $this->model($this, Null, rawurldecode($this->id));
       } else {
-        header('X-Frame-Options: SAMEORIGIN');
-        try {
-          ob_start();
-          echo $this->target->render();
-          echo ob_get_clean();
-          $this->statsd->timing("pageload", microtime(True) - $this->startRender);
-          $this->statsd->memory('memory.peakusage');
-          $this->setPreviousUrl();
-          exit;
-        } catch (AppException $e) {
-          $this->logger->err($e->__toString());
-          $this->clearOutput();
-          $this->display_exception($e);
-        } catch (Exception $e) {
-          $this->statsd->increment("Exception");
-          $this->logger->err($e->__toString());
-          $this->clearOutput();
-          $this->display_error(500);
-        }
+        $this->target = new $this->model($this, intval($this->id));
+      }
+    } catch (DbException $e) {
+      $this->statsd->increment("DbException");
+      \Application::display_error(404);
+    }
+    if ($this->target->id === 0 && $this->action === "edit") {
+      $this->action = "new";
+    }
+    if (!$this->controller->allow($this->user)) {
+      $targetClass = get_class($this->target);
+      $error = new AppException($this, $this->user->name." attempted to ".$this->action." ".$targetClass." ID#".$this->target->id);
+      $this->logger->warning($error->__toString());
+      \Application::display_error(403);
+    } else {
+      header('X-Frame-Options: SAMEORIGIN');
+      try {
+        ob_start();
+          echo $this->controller->render($this->target)->render();
+        echo ob_get_clean();
+        $this->statsd->timing("pageload", microtime(True) - $this->startRender);
+        $this->statsd->memory('memory.peakusage');
+        $this->setPreviousUrl();
+        exit;
+      } catch (AppException $e) {
+        $this->logger->err($e->__toString());
+        $this->clearOutput();
+        \Application::display_exception($e);
+      } catch (Exception $e) {
+        $this->statsd->increment("Exception");
+        $this->logger->err($e->__toString());
+        $this->clearOutput();
+        \Application::display_error(500);
       }
     }
   }
@@ -602,12 +605,12 @@ class Application {
     ]);
   }
 
-  public function view($view="index", $params=Null) {
+  public static function view($view="index", $params=Null) {
     // includes a provided application-level view.
     $file = joinPaths(Config::FS_ROOT, 'views', 'application', "$view.php");
     return new View($file, $params);
   }
-  public function render(View $view, $params=Null) {
+  public function render(\View $view, $params=Null) {
     // renders the given HTML text surrounded by the standard application header and footer.
     // passes $params into the header and footer views.
     $appVars = get_object_vars($this);
@@ -616,8 +619,10 @@ class Application {
         $appVars[$key] = $value;
       }
     }
-
-    return $view->copyAttrsTo($this->view('header', $appVars))->render().$view->render().$view->copyAttrsTo($this->view('footer', $appVars))->render();
+    $completeView = $view->copyAttrsTo(\Application::view('header', $appVars));
+    $completeView->append($view)
+                  ->append($view->copyAttrsTo(\Application::view('footer', $appVars)));
+    return $completeView->render();
   }
 
   // public function totalPoints() {

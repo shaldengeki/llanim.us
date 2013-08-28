@@ -28,13 +28,13 @@ class Topic extends Base {
   ];
   public static $JOINS = [
     'posts' => [
-      'obj' => 'Post',
+      'obj' => '\\ETI\\Post',
       'table' => 'posts',
       'own_col' => 'll_topicid',
       'join_col' => 'll_topicid'
     ],
     'user' => [
-      'obj' => 'User',
+      'obj' => '\\ETI\\User',
       'table' => 'users',
       'own_col' => 'userid',
       'join_col' => 'id'
@@ -46,7 +46,7 @@ class Topic extends Base {
       $this->load();
     }
     if (!isset($this->user)) {
-      $this->user = new User($this->db,  (int) $this->user_id);
+      $this->user = new User($this->db(),  (int) $this->user_id);
     }
     return $this->user;
   }
@@ -61,14 +61,14 @@ class Topic extends Base {
       foreach ($this->posts as $post) {
         $userIDs[$post->user->id] = 1;
       }
-      $userInfo = $this->db->table(\ETI\User::$TABLE)
+      $userInfo = $this->db()->table(\ETI\User::$TABLE)
                             ->where([
                                 \ETI\User::$FIELDS['id']['db'] => array_keys($userIDs)
                               ])
                             ->assoc(\ETI\User::$FIELDS['id']['db']);
       $this->users = [];
       foreach ($userInfo as $user) {
-        $newUser = new \ETI\User($this->db, $user[\ETI\User::$FIELDS['id']['db']]);
+        $newUser = new \ETI\User($this->db(), $user[\ETI\User::$FIELDS['id']['db']]);
         $this->users[] = $newUser->set($user);
       }
     }

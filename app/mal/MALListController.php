@@ -1,7 +1,7 @@
 <?php
 namespace MAL;
 
-class MALListController implements \Controller {
+class MALListController extends \BaseController {
   public $app;
 
   public static function MODEL_URL() {

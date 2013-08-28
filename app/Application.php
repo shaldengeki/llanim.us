@@ -84,7 +84,7 @@ class Application {
   // public $achievements=[];
   public $statsd, $logger, $cache, $dbs, $mailer, $serverTimeZone, $outputTimeZone, $user, $target, $startRender, $csrfToken=Null;
 
-  public $model,$action,$status,$class="";
+  public $model,$action,$status,$format,$class="";
   public $id=0;
   public $ajax=False;
   public $page=1;
@@ -205,7 +205,10 @@ class Application {
     foreach (get_declared_classes() as $className) {
       $interfaces = class_implements($className);
       if (isset($interfaces['Controller'])) {
-        $this->_controllers[$className::MODEL_URL()] = new $className($this);
+        $class = new ReflectionClass($className);
+        if (!$class->isAbstract()) {
+          $this->_controllers[$className::MODEL_URL()] = new $className($this);
+        }
       }
     }
 

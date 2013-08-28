@@ -18,6 +18,11 @@ body {
 
 @inactiveIcon    : #8C8C8C;
 
+@spring             : #2EA33D;
+@summer             : #FFFB87;
+@fall               : #FF8F17;
+@winter             : #007FFF;
+
 /* optimizeLegibility breaks some unicode characters on Chrome */
 h1, h2, h3, h4, h5, h6 {
   text-rendering: auto;
@@ -66,5 +71,38 @@ h1, h2, h3, h4, h5, h6 {
       padding-bottom: 10px;
       color: white;
     }
+  }
+}
+.sat-spring, .sat-summer, .sat-fall, .sat-winter {
+  border-color: @normText;
+  > .panel-heading {
+    border-color:     @normText;
+    color:            @normText;
+    > .panel-title {
+      display: inline-block;
+    }
+  }
+}
+
+.panel.sat-spring {
+  > .panel-heading {
+    background-color: @spring;
+    color:            #FFFFFF;
+  }
+}
+.panel.sat-summer {
+  > .panel-heading {
+    background-color: @summer;
+  }
+}
+.panel.sat-fall {
+  > .panel-heading {
+    background-color: @fall;
+  }
+}
+.panel.sat-winter {
+  > .panel-heading {
+    background-color: @winter;
+    color:            #FFFFFF;
   }
 }

@@ -10,5 +10,3 @@
       <p>Unfortunately, you don't have the required permissions to do that! If this is in error, please contact a site admin. Thanks!</p>
     </div>
     <div class='col-md-3'>&nbsp;</div>
-  </div>
-</div>

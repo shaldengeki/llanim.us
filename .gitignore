@@ -223,3 +223,6 @@ app/Config.php
 
 # Composer vendor files
 vendor/*
+
+# random textfiles.
+public/*.txt

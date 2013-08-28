@@ -83,11 +83,24 @@ abstract class Model {
     }
     return $invertedFields;
   }
-  public static function Get($db, $params) {
-    $objInfo = $db->table(static::$TABLE)->where($params)->limit(1)->firstRow();
+  public static function Get(\Application $app, $params) {
+    $objInfo = $app->dbs[static::$DB]->table(static::$TABLE)->where($params)->limit(1)->firstRow();
     $className = get_called_class();
-    $newObj = new $className($db, $objInfo[static::$FIELDS['id']['db']]);
+    $newObj = new $className($app, $objInfo[static::$FIELDS['id']['db']]);
     return $newObj->set($objInfo);
+  }
+  public static function GetList(\Application $app, $params) {
+    $objs = [];
+    $className = get_called_class();
+    $objQuery = $app->dbs[static::$DB]->table(static::$TABLE)
+                                      ->where($params)
+                                      ->order(static::$FIELDS['id']['db']." ASC")
+                                      ->query();
+    while ($dbObj = $objQuery->fetch()) {
+      $newObj = new $className($app, $dbObj[static::$FIELDS['id']['db']]);
+      $objs[] = $newObj->set($dbObj);
+    }
+    return $objs;
   }
   function __construct(\Application $app, $id) {
     $this->app = $app;
@@ -165,7 +178,7 @@ abstract class Model {
             if (!isset($this->{$include})) {
               $this->{$include} = [];
             }
-            $newObj = new $thisJoin['obj']($this->db(), $row[$thisJoin['obj']::$FIELDS['id']['db']]);
+            $newObj = new $thisJoin['obj']($this->app, $row[$thisJoin['obj']::$FIELDS['id']['db']]);
             $this->{$include}[] = $newObj->set($row);
           }
         }

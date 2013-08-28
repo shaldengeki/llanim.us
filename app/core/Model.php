@@ -66,7 +66,8 @@ abstract class Model {
         'obj' => '\\full\\namespace\\path\\to\\object',
         'table' => 'table_name',
         'own_col' => 'own_col_name',
-        'join_col' => 'join_col_name'
+        'join_col' => 'join_col_name',
+        'type' => 'one|many'
       ]
     ]
   */
@@ -176,10 +177,18 @@ abstract class Model {
           if (isset(static::$JOINS[$include])) {
             $thisJoin = static::$JOINS[$include];
             if (!isset($this->{$include})) {
-              $this->{$include} = [];
+              $this->{$include} = $thisJoin['type'] === 'many' ? [] : Null;
             }
             $newObj = new $thisJoin['obj']($this->app, $row[$thisJoin['obj']::$FIELDS['id']['db']]);
-            $this->{$include}[] = $newObj->set($row);
+            switch ($thisJoin['type']) {
+              case 'many':
+                $this->{$include}[] = $newObj->set($row);
+                break;
+              default:
+              case 'one':
+                $this->{$include} = $newObj->set($row);
+                break;
+            }
           }
         }
       }

@@ -35,13 +35,15 @@ class Post extends Base {
       'obj' => '\\ETI\\User',
       'table' => 'users',
       'own_col' => 'userid',
-      'join_col' => 'id'
+      'join_col' => 'id',
+      'type' => 'one'
     ],
     'topic' => [
       'obj' => '\\ETI\\Topic',
       'table' => 'topics',
       'own_col' => 'll_topicid',
-      'join_col' => 'll_topicid'
+      'join_col' => 'll_topicid',
+      'type' => 'one'
     ]
   ];
 

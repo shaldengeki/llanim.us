@@ -9,9 +9,6 @@
     $numSats = 0;
   }
 ?>
-<div class="page-header">
-  <h1>Seasonal Animu Topics <small>(hehe)</small></h1>
-</div>
 <ol class="media-list sat-list">
 <?php
   $lastClass = current($this->attrs['sats'])['panelClass'];
@@ -26,7 +23,7 @@
       <div class="panel panel-primary sat-<?php echo $sat['panelClass'] === Null ? $lastClass : $sat['panelClass']; ?>">
         <div class="panel-heading">
           <h3 class="panel-title"><?php echo $sat['link']; ?></h3>
-          <span class='pull-right'>
+          <span class='sat-length pull-right'>
             <?php echo $satDuration->formatShort(); ?>
           </span>
         </div>

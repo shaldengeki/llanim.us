@@ -18,18 +18,24 @@ class SATController extends \BaseController {
   public function render($object) {
     $header = \Application::view('header');
     $footer = \Application::view('footer');
-    $resultView = new \View(Null, ['app' => $this->app]);
+    $resultView = new \View(joinPaths(\Config::FS_ROOT, "views", "sat", $this->app->action.".php"), ['app' => $this->app]);
     switch ($this->app->action) {
+      case 'show':
+        $resultView->attrs['title'] = $object->topic->title;
+        $resultView->attrs['subtitle'] = "(hehe)";
+
+        break;
       case 'index':
       default:
-        $resultView = new \View(joinPaths(\Config::FS_ROOT, "views", "sat", $this->app->action.".php"), ['app' => $this->app]);
+        $header->attrs['title'] = $header->attrs['subtitle'] = "Seasonal Anime Topics";
+        $header->attrs['subsubtitle'] = "(hehe)";
         $modelName = static::MODEL_NAME();
         $sats = $modelName::GetList($this->app, [
                                      'completed' => 1
                                     ]);
         foreach ($sats as $key=>$sat) {
           $sat->load('topic');
-          $titleWords = explode(" ", $sat->topic[0]->title);
+          $titleWords = explode(" ", $sat->topic->title);
           switch (strtolower($titleWords[0])) {
             case 'spring':
               $panelClass = 'spring';
@@ -59,7 +65,7 @@ class SATController extends \BaseController {
             'sat' => $sat,
             'terms' => $sat->getTerms(10),
             'authors' => $authors,
-            'link' => $this->link($sat, $resultView, 'show', Null, Null, Null, $sat->topic[0]->title), 
+            'link' => $this->link($sat, $resultView, 'show', Null, Null, Null, $sat->topic->title), 
             'panelClass' => $panelClass
           ];
         }

@@ -21,6 +21,7 @@ class MALListController extends \BaseController {
     $resultView = new \View(joinPaths(\Config::FS_ROOT, "views", "mal", $this->app->action.".php"), ['app' => $this->app]);
     switch ($this->app->action) {
       default:
+        $header->attrs['title'] = $header->attrs['subtitle'] = "Welcome!";
         break;
     }
     return $resultView->prepend($header)->append($footer);

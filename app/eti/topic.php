@@ -31,13 +31,15 @@ class Topic extends Base {
       'obj' => '\\ETI\\Post',
       'table' => 'posts',
       'own_col' => 'll_topicid',
-      'join_col' => 'll_topicid'
+      'join_col' => 'll_topicid',
+      'type' => 'many'
     ],
     'user' => [
       'obj' => '\\ETI\\User',
       'table' => 'users',
       'own_col' => 'userid',
-      'join_col' => 'id'
+      'join_col' => 'id',
+      'type' => 'one'
     ]
   ];
 

@@ -23,13 +23,15 @@ class User extends Base {
       'obj' => '\\ETI\\Post',
       'table' => 'posts',
       'own_col' => 'id',
-      'join_col' => 'userid'
+      'join_col' => 'userid',
+      'type' => 'many'
     ],
     'topics' => [
       'obj' => '\\ETI\\Topic',
       'table' => 'topics',
       'own_col' => 'id',
-      'join_col' => 'userid'
+      'join_col' => 'userid',
+      'type' => 'many'
     ]
   ];
 

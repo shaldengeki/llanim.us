@@ -107,8 +107,6 @@
         <script type='text/javascript' src='http://pagead2.googlesyndication.com/pagead/show_ads.js'>
         </script>
       </div>
-      <div class='row'>
-        <div class='col-md-12'>
-          <h1><?php echo $this->escape($this->attrs['subtitle']); ?></h1>
-        </div>
+      <div class="page-header">
+        <h1><?php echo $this->escape($this->attrs['subtitle']); ?><?php echo isset($this->attrs['subsubtitle']) ? " <small>".$this->escape($this->attrs['subsubtitle'])."</small>" : ""; ?></h1>
       </div>

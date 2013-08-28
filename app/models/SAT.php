@@ -24,7 +24,8 @@ class SAT extends \Model {
       'obj' => '\\ETI\\Topic',
       'table' => 'seinma_llusers.topics',
       'own_col' => 'll_topicid',
-      'join_col' => 'll_topicid'
+      'join_col' => 'll_topicid',
+      'type' => 'one'
     ]
   ];
 

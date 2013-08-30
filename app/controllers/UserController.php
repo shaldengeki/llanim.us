@@ -25,7 +25,9 @@ class UserController extends \BaseController {
 
         $satIDs = array_map(function($sat) {
           return $sat->id;
-        }, \SAT\SAT::GetList($this->app));
+        }, \SAT\SAT::GetList($this->app, [
+                              'completed' => 1
+                             ]));
 
         // user post timeline.
         $startAndEndTimes = $object->db()->table(\ETI\Post::DB_NAME($this->app).'.'.\ETI\Post::$TABLE)

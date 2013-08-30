@@ -25,7 +25,9 @@ class TermController extends \BaseController {
 
         $satIDs = array_map(function($sat) {
           return $sat->id;
-        }, \SAT\SAT::GetList($this->app));
+        }, \SAT\SAT::GetList($this->app, [
+                             'completed' => 1
+                             ]));
 
         // term tfidf timeline.
         $satNum = 1;

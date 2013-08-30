@@ -26,6 +26,10 @@ class User extends \Model {
       'type' => 'bool',
       'db' => 'visible'
     ],
+    'last_ip' => [
+      'type' => 'string',
+      'db' => 'last_ip'
+    ]
   ];
   public static $JOINS = [
     'user' => [

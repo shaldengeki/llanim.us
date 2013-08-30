@@ -113,7 +113,7 @@ class UserController extends \BaseController {
 
         // sat authors, sorted by post counts
         $topics = [];
-        $postCounts = $object->db()->table(\ETI\Post::$TABLE)
+        $postCounts = $object->db()->table(\ETI\Post::DB_NAME($this->app).'.'.\ETI\Post::$TABLE)
                                     ->fields(\ETI\Post::$FIELDS['topic_id']['db'].' AS topic_id', 'COUNT(*) AS count')
                                     ->where([
                                             \ETI\Post::$FIELDS['user_id']['db'] => $object->id,

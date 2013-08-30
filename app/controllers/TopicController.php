@@ -1,7 +1,7 @@
 <?php
 namespace SAT;
 
-class SATController extends \BaseController {
+class TopicController extends \BaseController {
   public $app;
 
   public static function MODEL_URL() {

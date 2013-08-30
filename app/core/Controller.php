@@ -34,7 +34,7 @@ abstract class BaseController implements Controller {
   public function url(\Model $model, $action="show", $format=Null, array $params=Null, $id=Null) {
     // returns the url that maps to this object and the given action.
     if ($id === Null) {
-      $id = intval($model->id);
+      $id = $model->id;
     }
     $urlParams = "";
     if (is_array($params)) {

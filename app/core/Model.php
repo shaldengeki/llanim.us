@@ -84,13 +84,22 @@ abstract class Model {
     }
     return $invertedFields;
   }
-  public static function Get(\Application $app, $params) {
+  public static function DB_NAME(\Application $app) {
+    return $app->dbs[static::$DB]->database();
+  }
+  public static function Get(\Application $app, $params=Null) {
+    if ($params === Null) {
+      $params = [];
+    }
     $objInfo = $app->dbs[static::$DB]->table(static::$TABLE)->where($params)->limit(1)->firstRow();
     $className = get_called_class();
     $newObj = new $className($app, $objInfo[static::$FIELDS['id']['db']]);
     return $newObj->set($objInfo);
   }
-  public static function GetList(\Application $app, $params) {
+  public static function GetList(\Application $app, $params=Null) {
+    if ($params === Null) {
+      $params = [];
+    }
     $objs = [];
     $className = get_called_class();
     $objQuery = $app->dbs[static::$DB]->table(static::$TABLE)
@@ -149,7 +158,6 @@ abstract class Model {
     }
     return $this;
   }
-
   public function load() {
     $this->db()->table(static::$TABLE);
 
@@ -198,6 +206,29 @@ abstract class Model {
                       ->firstRow();
       return $this->set($row);
     }
+  }
+
+  public function prev() {
+    // gets the model with the next-lowest id.
+    $findRow = $this->db()->table(static::$TABLE)
+                        ->where([static::$FIELDS['id']['db']."<".$this->id])
+                        ->order(static::$FIELDS['id']['db']." DESC")
+                        ->limit(1)
+                        ->firstRow();
+    $objClass = get_called_class();
+    $obj = new $objClass($this->app, $findRow[static::$FIELDS['id']['db']]);
+    return $obj->set($findRow);
+  }
+  public function next() {
+    // gets the model with the next-highest id.
+    $findRow = $this->db()->table(static::$TABLE)
+                        ->where([static::$FIELDS['id']['db'].">".$this->id])
+                        ->order(static::$FIELDS['id']['db']." ASC")
+                        ->limit(1)
+                        ->firstRow();
+    $objClass = get_called_class();
+    $obj = new $objClass($this->app, $findRow[$fields['id']['db']]);
+    return $obj->set($findRow);
   }
 
   public function __get($property) {

@@ -28,28 +28,44 @@
           </span>
         </div>
         <div class="panel-body">
+          <div class='row'>
 <?php
   if (isset($sat['terms']) && $sat['terms']) {
 ?>
-          <p class='sat-discussed'>
-            Things discussed: <span class='sat-terms'><?php echo implode(", ", array_keys($sat['terms'])); ?></span>
-          </p>
+            <div class='sat-terms col-md-6'>
+              <h4>Things discussed:</h4>
+              <ol>
+<?php
+    foreach ($sat['terms'] as $term=>$info) {
+?>
+                <li><?php echo $info['link']; ?></li>
+<?php
+    }
+?>
+              </ol>
+            </div>
 <?php
   }
 ?>
 <?php
   if (isset($sat['authors'])) {
-    $authors = [];
+?>
+            <div class='sat-authors col-md-6'>
+              <h4>Primary authors:</h4>
+              <ol>
+<?php
     foreach ($sat['authors'] as $author) {
-      $authors[] = $author['link']." (".$author['count'].")";
+?>
+                <li><?php echo $author['link']; ?> (<?php echo $author['count']; ?>)</li>
+<?php
     }
 ?>
-          <p class='sat-authors'>
-            Primary authors: <span class='sat-authors'><?php echo implode(", ", $authors); ?></span>
-          </p>
+              </ol>
+            </div>
 <?php
   }
 ?>
+          </div>
         </div>
       </div>
     </div>

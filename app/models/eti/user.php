@@ -57,6 +57,32 @@ class User extends Base {
     }
     return $staff;
   }
+
+  public function getPostCounts($limit=Null) {
+    $this->db()->table(Post::DB_NAME($this->app).'.'.Post::$TABLE)
+              ->fields(Post::$FIELDS['user_id']['db'].' AS user_id', 'COUNT(*) AS count')
+              ->where([
+                      Post::$FIELDS['topic_id']['db'] => $this->id
+                      ])
+              ->group(Post::$FIELDS['user_id']['db'])
+              ->order('count DESC');
+    if ($limit !== Null) {
+      $this->db()->limit(intval($limit));
+    }
+    $postCountQuery = $this->db()->query();
+    $postCounts = [];
+    while ($postCount = $postCountQuery->fetch()) {
+      $postCounts[intval($postCount['user_id'])] = intval($postCount['count']);
+    }
+    return $postCounts;
+  }
+  public function postCounts() {
+    if (!isset($this->postCounts)) {
+      $this->postCounts = $this->getPostCounts();
+    }
+    return $this->postCounts;
+  }
+
 }
 
 ?>

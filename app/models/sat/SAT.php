@@ -53,12 +53,12 @@ class SAT extends \Model {
   }
   
   public function getPostCounts($limit=Null) {
-    $this->db()->table('seinma_llusers.posts')
-              ->fields('userid AS user_id', 'COUNT(*) AS count')
+    $this->db()->table(\ETI\Post::DB_NAME($this->app).'.'.\ETI\Post::$TABLE)
+              ->fields(\ETI\Post::$FIELDS['user_id']['db'].' AS user_id', 'COUNT(*) AS count')
               ->where([
-                      'll_topicid' => $this->id
+                      \ETI\Post::$FIELDS['topic_id']['db'] => $this->id
                       ])
-              ->group('userid')
+              ->group(\ETI\Post::$FIELDS['user_id']['db'])
               ->order('count DESC');
     if ($limit !== Null) {
       $this->db()->limit(intval($limit));
@@ -76,7 +76,5 @@ class SAT extends \Model {
     }
     return $this->postCounts;
   }
-
-
 }
 ?>

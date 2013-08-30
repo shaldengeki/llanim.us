@@ -47,6 +47,10 @@ class DbConn extends PDO {
     return $this;
   }
 
+  public function database() {
+    return $this->database;
+  }
+
   public function table($table) {
     $this->table = $table;
     return $this;

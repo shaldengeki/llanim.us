@@ -82,7 +82,7 @@ class Application {
   private $_classes=[],$_controllers=[],$_observers,$messages=[],$timings=[], $_statsdConn;
   // protected $totalPoints=Null;
   // public $achievements=[];
-  public $statsd, $logger, $cache, $dbs, $mailer, $serverTimeZone, $outputTimeZone, $user, $target, $startRender, $csrfToken=Null;
+  public $statsd, $logger, $cache, $dbs, $mailer, $serverTimeZone, $outputTimeZone, $timeZoneOffset, $user, $target, $startRender, $csrfToken=Null;
 
   public $model,$action,$status,$format,$class="";
   public $id=0;
@@ -154,6 +154,11 @@ class Application {
     date_default_timezone_set(Config::SERVER_TZ);
     $this->serverTimeZone = new DateTimeZone(Config::SERVER_TZ);
     $this->outputTimeZone = new DateTimeZone(Config::OUTPUT_TZ);
+
+    // get offset between server and output timezones in seconds.
+    $nowServer = new \DateTime("now", $this->serverTimeZone);
+    $nowOutput = new \DateTime("now", $this->outputTimeZone);
+    $this->timeZoneOffset = $this->outputTimeZone->getOffset($nowOutput) - $this->serverTimeZone->getOffset($nowServer);
 
     require_once Config::FS_ROOT.'/vendor/autoload.php';
 
@@ -329,9 +334,9 @@ class Application {
   }
 
   public static function display_error($code) {
-    http_response_code(intval($code));
+    http_response_code( (int) $code );
     $view = \Application::view('header');
-    echo $view->append(\Application::view(intval($code)))
+    echo $view->append(\Application::view( (int) $code ))
               ->append(\Application::view('footer'))
               ->render();
     exit;
@@ -450,7 +455,7 @@ class Application {
     $this->statsd->increment("hits");
 
     if (isset($_SESSION['id']) && is_numeric($_SESSION['id'])) {
-      $this->user = new \ETI\User($this->dbs['ETI'], intval($_SESSION['id']));
+      $this->user = new \ETI\User($this->dbs['ETI'], (int) $_SESSION['id']);
       // if user has not recently been active, update their last-active.
       if (!$this->user->isCurrentlyActive()) {
         $this->user->updateLastActive();
@@ -496,7 +501,7 @@ class Application {
 
     if (isset($_REQUEST['id'])) {
       if (is_numeric($_REQUEST['id'])) {
-        $this->id = intval($_REQUEST['id']);
+        $this->id = (int) $_REQUEST['id'];
       } else {
         $this->id = $_REQUEST['id'];
       }
@@ -513,7 +518,7 @@ class Application {
     if (!isset($_REQUEST['page'])) {
       $this->page = 1;
     } else {
-      $this->page = max(1, intval($_REQUEST['page']));
+      $this->page = max(1, (int) $_REQUEST['page']);
     }
     if (!isset($_REQUEST['format']) || $_REQUEST['format'] === "") {
       $this->format = 'html';
@@ -526,7 +531,7 @@ class Application {
       if (($this->model === "User" || $this->model === "Thread") && $this->id !== "") {
         $this->target = new $this->model($this, Null, rawurldecode($this->id));
       } else {
-        $this->target = new $this->model($this, intval($this->id));
+        $this->target = new $this->model($this, $this->id);
       }
     } catch (DbException $e) {
       $this->statsd->increment("DbException");

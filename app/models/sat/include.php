@@ -1,7 +1,8 @@
 <?php
 
 $files = [
-  'SAT.php'
+  'Topic.php',
+  'User.php',
 ];
 
 foreach ($files as $file) {

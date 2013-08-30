@@ -1,5 +1,5 @@
 <?php
-namespace ETI;
+namespace SAT;
 
 class UserController extends \BaseController {
   public $app;
@@ -8,7 +8,7 @@ class UserController extends \BaseController {
     return 'user';
   }
   public static function MODEL_NAME() {
-    return '\\ETI\\User';
+    return '\\SAT\\User';
   }
 
   public function __construct(\Application $app) {
@@ -21,11 +21,11 @@ class UserController extends \BaseController {
     $resultView = new \View(joinPaths(\Config::FS_ROOT, "views", static::MODEL_URL(), $this->app->action.".php"), ['app' => $this->app]);
     switch ($this->app->action) {
       case 'show':
-        $header->attrs['title'] = $header->attrs['subtitle'] = $object->name;
+        $header->attrs['title'] = $header->attrs['subtitle'] = $object->user->name;
 
         $satIDs = array_map(function($sat) {
           return $sat->id;
-        }, \SAT\SAT::GetList($this->app, [
+        }, \SAT\Topic::GetList($this->app, [
                               'completed' => 1
                              ]));
 
@@ -123,7 +123,7 @@ class UserController extends \BaseController {
                                     ->order("topic_id ASC")
                                     ->assoc('topic_id', 'count');
         foreach ($postCounts as $topicID => $count) {
-          $sat = new \SAT\SAT($this->app, intval($topicID));
+          $sat = new \SAT\Topic($this->app, intval($topicID));
           $sat->load('topic');
           $topics[$topicID] = [
             'topic' => $sat->topic,

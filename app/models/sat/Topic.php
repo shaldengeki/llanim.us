@@ -1,7 +1,7 @@
 <?php
 namespace SAT;
 
-class SAT extends \Model {
+class Topic extends \Model {
   public static $DB = "llAnimu";
   public static $TABLE = "sats";
   public static $PLURAL = "SATs";

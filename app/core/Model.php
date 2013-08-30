@@ -237,13 +237,13 @@ abstract class Model {
       return $this->$property();
     } elseif (property_exists($this, $property)) {
       // The property is already defined.
-      if (isset(static::$FIELDS[$property])) {
-        $this->load();
-      }
       return $this->$property;
     } else {
       if (isset(static::$FIELDS[$property])) {
         return $this->load()
+                    ->{$property};
+      } elseif (isset(static::$JOINS[$property])) {
+        return $this->load($property)
                     ->{$property};
       } else {
         throw new ModelException("Requested attribute does not exist: ".$property." on: ".get_called_class());

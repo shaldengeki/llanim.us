@@ -8,7 +8,7 @@ class SATController extends \BaseController {
     return 'sat';
   }
   public static function MODEL_NAME() {
-    return '\\SAT\\SAT';
+    return '\\SAT\\Topic';
   }
 
   public function __construct(\Application $app) {
@@ -88,7 +88,7 @@ class SATController extends \BaseController {
           $prevTerms = [];
         }
         foreach ($object->postCounts() as $userID => $count) {
-          $user = new \ETI\User($this->app, intval($userID));
+          $user = new \SAT\User($this->app, intval($userID));
           $authors[$userID] = [
             'user' => $user,
             'link' => $this->link($user, $resultView, 'show', Null, Null, Null, $user->name),
@@ -142,7 +142,7 @@ class SATController extends \BaseController {
           }
           $authors = [];
           foreach ($sat->getPostCounts(5) as $userID => $count) {
-            $user = new \ETI\User($this->app, intval($userID));
+            $user = new \SAT\User($this->app, intval($userID));
             $authors[$userID] = [
               'user' => $user,
               'link' => $this->link($user, $resultView, 'show', Null, Null, Null, $user->name),

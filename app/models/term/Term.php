@@ -13,7 +13,7 @@ class Term extends \Model {
   ];
   public static $JOINS = [
     'topics' => [
-      'obj' => '\\SAT\\SAT',
+      'obj' => '\\SAT\\Topic',
       'table' => 'seinma_llanimu.sat_tfidfs',
       'own_col' => 'term',
       'join_col' => 'term',
@@ -33,7 +33,7 @@ class Term extends \Model {
     $topicQuery = $this->db()->query();
     $topics = [];
     while ($topic = $topicQuery->fetch()) {
-      $sat = new \SAT\SAT($this->app, (int) $topic['ll_topicid'] );
+      $sat = new \SAT\Topic($this->app, (int) $topic['ll_topicid'] );
       $topics[$sat->id] = [
         'topic' => $sat,
         'tfidf' => (float) $topic['tfidf']

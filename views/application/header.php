@@ -51,6 +51,7 @@
           <ul class="nav navbar-nav">
             <li><a href="http://blog.llanim.us">Blog</a></li>
             <li><a href="https://animurecs.com">Animurecs</a></li>
+            <li><a href="/sat">SAT</a></li>
 <!--             <li class="dropdown">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown">
                 SAT

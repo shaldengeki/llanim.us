@@ -2,9 +2,9 @@
   require_once($_SERVER['DOCUMENT_ROOT']."/app/include.php");
   \Application::check_partial_include(__FILE__);
 
-  $this->attrs['authors'] = isset($this->attrs['authors']) ? $this->attrs['authors'] : [];
-  $this->attrs['terms'] = isset($this->attrs['terms']) ? $this->attrs['terms'] : [];
-  $this->attrs['timeline'] = isset($this->attrs['timeline']) ? $this->attrs['timeline'] : [];
+  $this->attrs['authors'] = $this->getDefaultAttr('authors', []);
+  $this->attrs['terms'] = $this->getDefaultAttr('terms', []);
+  $this->attrs['timeline'] = $this->getDefaultAttr('timeline', []);
 ?>
 <div class='row'>
   <div class='col-md-12'>

@@ -82,6 +82,10 @@ class View {
     return $view;
   }
 
+  public function getDefaultAttr($attr, $default) {
+    return isset($this->attrs[$attr]) ? $this->attrs[$attr] : $default;
+  }
+
   public function escape($input) {
     if ($input === '' || $input === 'NULL') {
       return '';

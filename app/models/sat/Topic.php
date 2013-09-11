@@ -53,22 +53,33 @@ class Topic extends \Model {
   }
   
   public function getPostCounts($limit=Null) {
-    $this->db()->table(\ETI\Post::DB_NAME($this->app).'.'.\ETI\Post::$TABLE)
-              ->fields(\ETI\Post::$FIELDS['user_id']['db'].' AS user_id', 'COUNT(*) AS count')
-              ->where([
-                      \ETI\Post::$FIELDS['topic_id']['db'] => $this->id
-                      ])
-              ->group(\ETI\Post::$FIELDS['user_id']['db'])
-              ->order('count DESC');
-    if ($limit !== Null) {
-      $this->db()->limit(intval($limit));
-    }
-    $postCountQuery = $this->db()->query();
+    $postCountQuery = $this->db()->table(\ETI\Post::DB_NAME($this->app).'.'.\ETI\Post::$TABLE)
+                                  ->fields(\ETI\Post::$FIELDS['user_id']['db'].' AS user_id', 'COUNT(*) AS count')
+                                  ->where([
+                                          \ETI\Post::$FIELDS['topic_id']['db'] => $this->id
+                                          ])
+                                  ->group(\ETI\Post::$FIELDS['user_id']['db'])
+                                  ->order('count DESC')
+                                  ->query();
     $postCounts = [];
+
+    // group postcounts by main userID.
     while ($postCount = $postCountQuery->fetch()) {
-      $postCounts[intval($postCount['user_id'])] = intval($postCount['count']);
+      try {
+        $user = new \SAT\User($this->app, (int) $postCount['user_id']);
+        if (isset($postCounts[$user->main()->id])) {
+          $postCounts[$user->main()->id]['count'] += (int) $postCount['count'];
+        } else {
+          $postCounts[$user->main()->id] = ['user' => $user, 'count' => (int) $postCount['count']];
+        }
+      } catch (\DbException $e) {
+        // no such SAT user. add an ETI user instead.
+        $user = new \ETI\User($this->app, (int) $postCount['user_id']);
+        $postCounts[$user->id] = ['user' => $user, 'count' => (int) $postCount['count']];
+      }
     }
-    return $postCounts;
+    array_sort_by_key($postCounts, 'count');
+    return array_slice($postCounts, 0, $limit, True);
   }
   public function postCounts() {
     if (!isset($this->postCounts)) {

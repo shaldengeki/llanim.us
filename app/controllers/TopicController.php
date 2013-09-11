@@ -79,6 +79,8 @@ class TopicController extends \BaseController {
 
         // sat authors, sorted by post counts
         $authors = [];
+
+        // build an array of postcounts for the previous SAT, grouped by main ID.
         try {
           $prevSAT = $object->prev();
           $prevCounts = $prevSAT->postCounts();
@@ -87,14 +89,19 @@ class TopicController extends \BaseController {
           $prevCounts = [];
           $prevTerms = [];
         }
-        foreach ($object->postCounts() as $userID => $count) {
-          $user = new \SAT\User($this->app, intval($userID));
-          $authors[$userID] = [
-            'user' => $user,
-            'link' => $this->link($user, $resultView, 'show', Null, Null, Null, $user->name),
-            'count' => intval($count),
-            'change' => isset($prevCounts[$userID]) ? $count - $prevCounts[$userID] : $count
+        // now calculate changes and figure out potential links.
+        foreach ($object->postCounts() as $mainID=>$info) {
+          $authorInfo = [
+            'user' => $info['user'],
+            'count' => (int) $info['count'],
+            'change' => isset($prevCounts[$mainID]) ? $info['count'] - $prevCounts[$mainID]['count'] : $info['count']
           ];
+          if ($authorInfo['user'] instanceof \SAT\User) {
+            $authorInfo['link'] = $this->link($info['user'], $resultView, 'show', Null, Null, Null, $info['user']->main()->name);
+          } else {
+            $authorInfo['link'] = $info['user']->name;
+          }
+          $authors[$mainID] = $authorInfo;
         }
         array_sort_by_key($authors, 'count');
         $resultView->attrs['authors'] = $authors;
@@ -115,12 +122,33 @@ class TopicController extends \BaseController {
       default:
         $header->attrs['title'] = $header->attrs['subtitle'] = "Seasonal Anime Topics";
         $header->attrs['subsubtitle'] = "(hehe)";
+
+        // get the number of SATs so we can paginate and enumerate them properly.
         $modelName = static::MODEL_NAME();
-        $sats = $modelName::GetList($this->app, [
-                                     'completed' => 1,
-                                    ]);
-        foreach ($sats as $key=>$sat) {
-          $sat->load('topic');
+        $numSATs = $modelName::Count($this->app, [
+                                      'completed' => 1
+                                     ]);
+
+        $satsPerPage = 50;
+        $numPages = intval($numSATs / $satsPerPage) + 1;
+        $resultView->attrs['pagination'] = $this->paginate($this->url(\SAT\Topic::Get($this->app), 'index').'?page=', $numPages);
+
+        // now get a paginated list of SATs.
+        $offset = ($this->app->page - 1) * $satsPerPage;
+        $satRows = $this->app->dbs['llAnimu']->table(\SAT\Topic::$TABLE)
+                                              ->where([
+                                                      'completed' => 1
+                                                      ])
+                                              ->offset($offset)
+                                              ->limit($satsPerPage)
+                                              ->order(\SAT\Topic::$FIELDS['id']['db'].' DESC')
+                                              ->assoc();
+        $sats = [];
+        $currSAT = $numSATs - $offset - 1;
+        foreach ($satRows as $satInfo) {
+          $sat = new \SAT\Topic($this->app, intval($satInfo[\SAT\Topic::$FIELDS['id']['db']]));
+          $sat->set($satInfo)
+              ->load('topic');
           $titleWords = explode(" ", $sat->topic->title);
           switch (strtolower($titleWords[0])) {
             case 'spring':
@@ -137,17 +165,27 @@ class TopicController extends \BaseController {
               $panelClass = 'winter';
               break;
             default:
+              // inherit from previous panel.
               $panelClass = Null;
               break;
           }
           $authors = [];
-          foreach ($sat->getPostCounts(5) as $userID => $count) {
-            $user = new \SAT\User($this->app, intval($userID));
-            $authors[$userID] = [
-              'user' => $user,
-              'link' => $this->link($user, $resultView, 'show', Null, Null, Null, $user->name),
-              'count' => intval($count)
-            ];
+          foreach ($sat->getPostCounts(5) as $info) {
+            if ($info['user'] instanceof \SAT\User) {
+              $user = $info['user']->load('user');
+              $authors[$user->id] = [
+                'user' => $user,
+                'link' => $this->link($user, $resultView, 'show', Null, Null, Null, $user->main()->name),
+                'count' => (int) $info['count']
+              ];
+            } else {
+              $user = $info['user']->load();
+              $authors[$user->id] = [
+                'user' => $user,
+                'link' => $user->name,
+                'count' => (int) $info['count']
+              ];
+            }
           }
           $terms = [];
           foreach ($sat->getTerms(10) as $term=>$tfidf) {
@@ -157,22 +195,22 @@ class TopicController extends \BaseController {
               'tfidf' => $tfidf
             ];
           }
-          $sats[$key] = [
+          $sats[$currSAT] = [
             'sat' => $sat,
             'terms' => $terms,
             'authors' => $authors,
             'link' => $this->link($sat, $resultView, 'show', Null, Null, Null, $sat->topic->title), 
             'panelClass' => $panelClass
           ];
+          $currSAT--;
         }
-        krsort($sats);
         $resultView->attrs['sats'] = $sats;
         break;
     }
     return $resultView->prepend($header)->append($footer);
   }
 
-  public function allow(\ETI\User $user) {
+  public function allow(\SAT\User $user) {
     return True;
   }
 }

@@ -27,7 +27,7 @@ class MALListController extends \BaseController {
     return $resultView->prepend($header)->append($footer);
   }
 
-  public function allow(\ETI\User $user) {
+  public function allow(\SAT\User $user) {
     return True;
   }
 }

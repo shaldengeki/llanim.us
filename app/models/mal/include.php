@@ -1,8 +1,7 @@
 <?php
 
 $files = [
-  'MALList.php',
-  'MALListController.php'
+  'MALList.php'
 ];
 
 foreach ($files as $file) {

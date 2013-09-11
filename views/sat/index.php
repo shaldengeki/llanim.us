@@ -8,6 +8,9 @@
     $this->attrs['sats'] = [];
     $numSats = 0;
   }
+  $this->attrs['pagination'] = $this->getDefaultAttr('pagination', '');
+
+  echo $this->attrs['pagination'];
 ?>
 <ol class="media-list sat-list">
 <?php
@@ -77,3 +80,6 @@
   }
 ?>
 </ol>
+<?php
+  echo $this->attrs['pagination'];
+?>

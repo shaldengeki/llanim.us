@@ -107,11 +107,27 @@ abstract class Model {
                                       ->order(static::$FIELDS['id']['db']." ASC")
                                       ->query();
     while ($dbObj = $objQuery->fetch()) {
-      $newObj = new $className($app, $dbObj[static::$FIELDS['id']['db']]);
+      try {
+        $newObj = new $className($app, $dbObj[static::$FIELDS['id']['db']]);
+      } catch (DbException $e) {
+        continue;
+      }
       $objs[] = $newObj->set($dbObj);
     }
     return $objs;
   }
+  public static function Count(\Application $app, $params=Null) {
+    if ($params === Null) {
+      $params = [];
+    }
+    $objs = [];
+    $className = get_called_class();
+    return intval($app->dbs[static::$DB]->table(static::$TABLE)
+                                        ->fields("COUNT(*)")
+                                        ->where($params)
+                                        ->count());
+  }
+
   function __construct(\Application $app, $id) {
     $this->app = $app;
     $this->id = $id;
@@ -192,8 +208,8 @@ abstract class Model {
               case 'many':
                 $this->{$include}[] = $newObj->set($row);
                 break;
-              default:
               case 'one':
+              default:
                 $this->{$include} = $newObj->set($row);
                 break;
             }

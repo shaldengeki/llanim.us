@@ -5,7 +5,7 @@ class UserController extends \BaseController {
   public $app;
 
   public static function MODEL_URL() {
-    return 'user';
+    return 'sater';
   }
   public static function MODEL_NAME() {
     return '\\SAT\\User';
@@ -20,20 +20,62 @@ class UserController extends \BaseController {
     $footer = \Application::view('footer');
     $resultView = new \View(joinPaths(\Config::FS_ROOT, "views", static::MODEL_URL(), $this->app->action.".php"), ['app' => $this->app]);
     switch ($this->app->action) {
+      case 'log_in':
+        // check to see if this user is signed into ETI.
+        $urlParams = http_build_query([
+                                      'username' => $object->user->name,
+                                      'ip' => $_SERVER['REMOTE_ADDR']
+                                      ]);
+        try {
+          $checkETI = new \Curl('https://boards.endoftheinter.net/scripts/login.php?'.$urlParams);
+          $checkETI = (bool) ( $checkETI->ssl()->get() === "1:".$object->user->name );
+        } catch (CurlException $e) {
+          $this->app->delayedMessage("An error occurred while trying to verify your login. Please try again later!", "error");
+          $this->app->redirect();
+        }
+        if (!$checkETI) {
+          $this->app->delayedMessage("You're not currently signed into ETI. Please do so and then try again!");
+          $this->app->redirect();
+        }
+        $object->setSession();
+        if ($object->isLoggedIn()) {
+          $this->app->delayedMessage("You're now logged in as ".$resultView->escape($object->user->name).".", "success");
+        } else {
+          $this->app->delayedMessage("An error occurred while signing you in. Please try again!", "error");
+        }
+        $this->app->redirect();
+        break;
+      case 'log_out':
+        // unset session and redirect.
+        $object->unsetSession();
+        $this->app->redirect('/');
+        break;
       case 'show':
+        if (!$object->isMain()) {
+          $this->app->redirect('/'.static::MODEL_URL().'/'.$object->main()->id);
+        }
+
         $header->attrs['title'] = $header->attrs['subtitle'] = $object->user->name;
+
+        if ($object->alts()) {
+          $header->attrs['subsubtitle'] = "Alts: ".implode(", ", array_map(function($alt) {
+            return $alt->name;
+          }, $object->alts()));
+        }
 
         $satIDs = array_map(function($sat) {
           return $sat->id;
         }, \SAT\Topic::GetList($this->app, [
                               'completed' => 1
                              ]));
+        $userIDs = $object->altIDs();
+        $userIDs[] = $object->main()->id;
 
         // user post timeline.
         $startAndEndTimes = $object->db()->table(\ETI\Post::DB_NAME($this->app).'.'.\ETI\Post::$TABLE)
                                   ->fields("MIN(".\ETI\Post::$FIELDS['date']['db'].") AS start_time", "MAX(".\ETI\Post::$FIELDS['date']['db'].") AS end_time")
                                   ->where([
-                                          \ETI\Post::$FIELDS['user_id']['db'] => $object->id,
+                                          \ETI\Post::$FIELDS['user_id']['db'] => $userIDs,
                                           \ETI\Post::$FIELDS['topic_id']['db'] => $satIDs
                                           ])
                                   ->firstRow();
@@ -56,7 +98,7 @@ class UserController extends \BaseController {
         $userTimeline = $object->db()->table(\ETI\Post::DB_NAME($this->app).'.'.\ETI\Post::$TABLE)
                                 ->fields("ROUND(".\ETI\Post::$FIELDS['date']['db']."/".intval($groupBySeconds).")*".intval($groupBySeconds)." AS time, COUNT(*) AS count")
                                 ->where([
-                                        \ETI\Post::$FIELDS['user_id']['db'] => $object->id,
+                                        \ETI\Post::$FIELDS['user_id']['db'] => $userIDs,
                                         \ETI\Post::$FIELDS['topic_id']['db'] => $satIDs
                                         ])
                                 ->group('time')
@@ -88,7 +130,7 @@ class UserController extends \BaseController {
         $hourlyPosts = $object->db()->table(\ETI\Post::DB_NAME($this->app).'.'.\ETI\Post::$TABLE)
                                         ->fields("HOUR(FROM_UNIXTIME(".\ETI\Post::$FIELDS['date']['db']."+".intval($this->app->timeZoneOffset).")) AS hour, COUNT(*) AS count")
                                         ->where([
-                                                \ETI\Post::$FIELDS['user_id']['db'] => $object->id,
+                                                \ETI\Post::$FIELDS['user_id']['db'] => $userIDs,
                                                 \ETI\Post::$FIELDS['topic_id']['db'] => $satIDs
                                                 ])
                                         ->group('hour')
@@ -116,7 +158,7 @@ class UserController extends \BaseController {
         $postCounts = $object->db()->table(\ETI\Post::DB_NAME($this->app).'.'.\ETI\Post::$TABLE)
                                     ->fields(\ETI\Post::$FIELDS['topic_id']['db'].' AS topic_id', 'COUNT(*) AS count')
                                     ->where([
-                                            \ETI\Post::$FIELDS['user_id']['db'] => $object->id,
+                                            \ETI\Post::$FIELDS['user_id']['db'] => $userIDs,
                                             \ETI\Post::$FIELDS['topic_id']['db'] => $satIDs
                                             ])
                                     ->group("topic_id")
@@ -193,7 +235,22 @@ class UserController extends \BaseController {
     return $resultView->prepend($header)->append($footer);
   }
 
-  public function allow(\ETI\User $user) {
+  public function allow(\SAT\User $user) {
+    switch($this->app->action) {
+      case 'index':
+      case 'show':
+        return True;
+        break;
+
+      case 'log_in':
+        return !$user->isLoggedIn();
+        break;
+
+      case 'log_out':
+        return $user->isLoggedIn();
+        break;
+    }
+
     return True;
   }
 }

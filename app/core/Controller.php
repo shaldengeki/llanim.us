@@ -10,7 +10,7 @@ interface Controller {
   // takes an object and returns a view.
   public function render($object);
 
-  public function allow(\ETI\User $user);
+  public function allow(\SAT\User $user);
 }
 
 abstract class BaseController implements Controller {
@@ -27,7 +27,7 @@ abstract class BaseController implements Controller {
     $this->app = $app;
   }
 
-  public function allow(\ETI\User $user) {
+  public function allow(\SAT\User $user) {
     return False;
   }
 
@@ -68,6 +68,52 @@ abstract class BaseController implements Controller {
     }
     return $this->link($model, $view, $action, Null, $urlParams, $id, $text, $raw, $params);
   }
+
+  public function paginate($baseLink, $maxPages=Null, $ajaxTarget=Null) {
+    // displays a pagination bar.
+    // baseLink should be everything up to and including &page=
+    $pageIncrement = 10;
+    $displayFirstPages = 10;
+    if ($ajaxTarget) {
+      $link = "<a class='ajaxLink' data-url='".$baseLink."[PAGE]' data-target='".$ajaxTarget."' href='".$baseLink."[PAGE]'>";
+    } else {
+      $link = "<a href='".$baseLink."[PAGE]'>";
+    }
+
+    $output = "<div class='center-horizontal'><ul class='pagination'>\n";
+    $i = 1;
+    if ($this->app->page > 1) {
+      $output .= "    <li>".str_replace("[PAGE]", $this->app->page-1, $link)."«</a></li>\n";
+    }
+    if ($maxPages !== Null) {
+      while ($i <= $maxPages) {
+        if ($i == $this->app->page) {
+          $output .= "    <li class='active'><a href='#'>".$i."</a></li>";     
+        } else {
+          $output .= "    <li>".str_replace("[PAGE]", $i, $link).$i."</a></li>";
+        }
+        if ($i < $displayFirstPages || abs($this->app->page - $i) <= $pageIncrement ) {
+          $i++;
+        } elseif ($i >= $displayFirstPages && $maxPages <= $i + $pageIncrement) {
+          $i++;
+        } elseif ($i >= $displayFirstPages && $maxPages > $i + $pageIncrement) {
+          $i += $pageIncrement;
+        }
+      }
+    } else {
+      while ($i < $this->app->page) {
+          $output .= "    <li>".str_replace("[PAGE]", $i, $link).$i."</a></li>";
+          $i++;
+      }
+      $output .= "<li class='active'><a href='#'>".$this->app->page."</a></li>";
+    }
+    if ($maxPages === Null || $this->app->page < $maxPages) {
+      $output .= "    <li>".str_replace("[PAGE]", $this->app->page+1, $link)."»</a></li>\n";
+    }
+    $output .= "</ul></div>\n";
+    return $output;
+  }
+  
 }
 
 ?>

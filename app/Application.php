@@ -455,13 +455,23 @@ class Application {
     $this->statsd->increment("hits");
 
     if (isset($_SESSION['id']) && is_numeric($_SESSION['id'])) {
-      $this->user = new \ETI\User($this->dbs['ETI'], (int) $_SESSION['id']);
+      $this->user = new \SAT\User($this->dbs['ETI'], (int) $_SESSION['id']);
       // if user has not recently been active, update their last-active.
-      if (!$this->user->isCurrentlyActive()) {
-        $this->user->updateLastActive();
-      }
+      // if (!$this->user->isCurrentlyActive()) {
+      //   $this->user->updateLastActive();
+      // }
     } else {
-      $this->user = new \ETI\User($this, 0);
+      // check to see if this user has a last-ip in our user table.
+      try {
+        // check to see if this user is in the SAT.
+        $this->user = \SAT\User::Get($this, [
+                                    \SAT\User::$FIELDS['last_ip']['db'] => $_SERVER['REMOTE_ADDR']
+                                  ]);
+        $this->user->setSession();
+      } catch (DbException $e) {
+        // no matching last-ip entry. user is a guest.
+        $this->user = new \SAT\User($this, 0);
+      }
     }
 
     // check to see if this request is being made via ajax.

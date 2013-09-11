@@ -96,9 +96,7 @@ class User extends \Model {
                             ->where([
                                     'sat_users_alts.main_id' => $this->main()->id
                                     ])
-                            ->log($this->app->logger)
                             ->assoc('alt_id');
-      $this->db()->unlog();
       if (!$alts) {
         $this->alts = [];
       } else {

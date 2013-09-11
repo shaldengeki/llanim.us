@@ -85,7 +85,7 @@ class TopicController extends \BaseController {
           $prevSAT = $object->prev();
           $prevCounts = $prevSAT->postCounts();
           $prevTerms = $prevSAT->getTerms();
-        } catch (DbException $e) {
+        } catch (\DbException $e) {
           $prevCounts = [];
           $prevTerms = [];
         }

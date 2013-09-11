@@ -30,7 +30,7 @@ class Topic extends \Model {
   ];
 
   public function getTerms($limit=Null) {
-    $this->db()->table('sat_tfidfs')
+    $this->db()->table('topic_tfidfs')
               ->where([
                       'll_topicid' => $this->id
                       ])

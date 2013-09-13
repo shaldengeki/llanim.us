@@ -1,10 +1,11 @@
 <?php
 
 class View {
-  public $filename, $html, $attrs, $css, $preJs, $js, $start, $prependViews, $appendViews;
+  public $app, $filename, $html, $attrs, $css, $preJs, $js, $start, $prependViews, $appendViews;
 
-  public function __construct($filename=Null, $attrs=Null) {
+  public function __construct(Application $app, $filename=Null, $attrs=Null) {
     $this->start = microtime(True);
+    $this->app = $app;
     $this->filename = $filename;
     $this->html = Null;
     $this->attrs = [
@@ -72,7 +73,7 @@ class View {
   }
 
   public static function CopyAttrs(View $view, $filename=Null) {
-    $newView = new View($filename, $view->attrs);
+    $newView = new View($view->app, $filename, $view->attrs);
     return $view->copyAttrsTo($newView);
   }
   public function copyAttrsTo(View $view) {

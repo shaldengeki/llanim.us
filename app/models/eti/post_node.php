@@ -10,7 +10,7 @@ namespace ETI;
   public static function getDOM($html) {
     //load document.
     libxml_use_internal_errors(True);
-    $dom = new \DOM();
+    $dom = new \Dom\Dom();
     $dom->loadHTML('<?xml encoding="UTF-8">'.$html);
     // dirty fix
     foreach ($dom->childNodes as $item) {

@@ -79,10 +79,11 @@ class Application {
     And configuration parameters
     Also serves as DI container (stores database, logger, recommendation engine objects)
   */
-  private $_classes=[],$_controllers=[],$_observers,$messages=[],$timings=[], $_statsdConn;
+  private $_classes=[],$_controllers=[],$_observers,$messages=[],$timings=[],$_statsdConn;
   // protected $totalPoints=Null;
   // public $achievements=[];
   public $statsd, $logger, $cache, $dbs, $mailer, $serverTimeZone, $outputTimeZone, $timeZoneOffset, $user, $target, $startRender, $csrfToken=Null;
+  public $cliOpts=[];
 
   public $model,$action,$status,$format,$class="";
   public $id=0;
@@ -145,12 +146,11 @@ class Application {
     }
     return $this->mailer;
   }
-  private function _loadDependencies() {
+  public function loadDependencies() {
     // Loads configuration and all application objects from library files.
     // Connects database, logger, recommendation engine.
     // Creates a list of objects that can be accessed via URL.
-
-    $this->_loadDependency("./app/Config.php");
+    require_once(dirname(__DIR__)."/app/Config.php");
     date_default_timezone_set(Config::SERVER_TZ);
     $this->serverTimeZone = new DateTimeZone(Config::SERVER_TZ);
     $this->outputTimeZone = new DateTimeZone(Config::OUTPUT_TZ);
@@ -162,14 +162,17 @@ class Application {
 
     require_once Config::FS_ROOT.'/vendor/autoload.php';
 
+    /*
     try {
       $this->statsd = $this->_connectStatsD();
     } catch (Exception $e) {
-      // we don't ~technically~ need memcached to run the site. Log an exception.
+      // we don't ~technically~ need statsd to run the site. Log an exception.
+    */
       $this->statsd = new EmptyDependency();
+    /*
       $this->logger->alert($e->__toString());
     }
-
+    */
     require_once('Log.php');
     $this->logger = $this->_connectLogger();
 
@@ -200,10 +203,10 @@ class Application {
       }
     } catch (AppException $e) {
       $this->logger->alert($e);
-      \Application::display_error(500);
+      $this->display_error(500);
     }
 
-    session_set_cookie_params(0, '/', '.llanim.us', True, True);
+    session_set_cookie_params(0, '/', '.llanim.us', False, True);
     session_start();
 
     // _controllers is a modelUrl:controller mapping for controllers.
@@ -226,7 +229,7 @@ class Application {
     //   }
     // } catch (AppException $e) {
     //   $this->logger->alert($e);
-    //   \Application::display_error(500);
+    //   $this->display_error(500);
     // }
     // $achievementSlice = array_slice(get_declared_classes(), $nonAchievementClasses);
     // foreach ($achievementSlice as $achievementName) {
@@ -235,7 +238,7 @@ class Application {
     // }
     // ksort($this->achievements);
   }
-  private function _bindEvents() {
+  public function bindEvents() {
     // binds all event observers.
 
     // // clear cache for a database object every time it's updated or deleted.
@@ -333,26 +336,26 @@ class Application {
     }
   }
 
-  public static function display_error($code) {
+  public function display_error($code) {
     http_response_code( (int) $code );
-    $view = \Application::view('header');
-    echo $view->append(\Application::view( (int) $code ))
-              ->append(\Application::view('footer'))
+    $view = $this->view('header');
+    echo $view->append($this->view( (int) $code ))
+              ->append($this->view('footer'))
               ->render();
     exit;
   }
-  public static function display_exception($e) {
+  public function display_exception($e) {
     // formats a (subclassed) instance of AppException for display to the end user.
-    $view = \Application::view('header');
-    echo $view->append(\Application::view('exception', ['exception' => $e]))
-              ->append(\Application::view('footer'))
+    $view = $this->view('header');
+    echo $view->append($this->view('exception', ['exception' => $e]))
+              ->append($this->view('footer'))
               ->render();
     exit;
   }
-  public static function check_partial_include($filename) {
+  public function check_partial_include($filename) {
     // displays the standard 404 page if the user is requesting a partial directly.
     if (str_replace("\\", "/", $filename) === $_SERVER['SCRIPT_FILENAME']) {
-      \Application::display_error(404);
+      $this->display_error(404);
     }
   }
 
@@ -440,6 +443,41 @@ class Application {
     }
   }
 
+  public function initScript($shortOpts=Null, $longOpts=Null) {
+    // start of application logic for scripts.
+    // loads dependencies and parses arguments.
+
+    $this->startRender = microtime(true);
+    set_error_handler('ErrorHandler', E_ALL & ~E_NOTICE);
+    mb_internal_encoding('UTF-8');
+
+    $this->loadDependencies();
+
+    if ($shortOpts || $longOpts) {
+      $shortOpts = $shortOpts ? $shortOpts : "";
+      $longOpts = $longOpts ? $longOpts : [];
+
+      $formattedLongOpts = [];
+      foreach ($longOpts as $opt=>$settings) {
+        if ($settings['value'] === False) {
+          $formattedLongOpts[] = $opt;
+        } else {
+          if ($settings['required'] === False) {
+            $formattedLongOpts[] = $opt.'::';
+          } else {
+            $formattedLongOpts[] = $opt.':';
+          }
+        }
+      }
+
+      $this->cliOpts = getopt($shortOpts, $formattedLongOpts);
+      if ($this->cliOpts === False) {
+        echo "Invalid arguments provided:\n".print_r($shortOpts, True).print_r($longOpts, True)."\n";
+        exit;
+      }
+    }
+  }
+
   public function init() {
     // start of application logic.
     // loads dependencies, binds events, sets request variables, then attempts to render the current request.
@@ -448,9 +486,9 @@ class Application {
     set_error_handler('ErrorHandler', E_ALL & ~E_NOTICE);
     mb_internal_encoding('UTF-8');
 
-    $this->_loadDependencies();
+    $this->loadDependencies();
 
-    $this->_bindEvents();
+    $this->bindEvents();
 
     $this->statsd->increment("hits");
 
@@ -485,7 +523,7 @@ class Application {
       $this->csrfToken = $this->_generateCSRFToken();
       // if request came in through AJAX, or there isn't a POST, don't run CSRF filter.
       if (!$this->ajax && !empty($_POST) && !$this->checkCSRF()) {
-        \Application::display_error(403);
+        $this->display_error(403);
       }
     }
 
@@ -502,9 +540,9 @@ class Application {
     } elseif (!isset($_REQUEST['controller']) || $_REQUEST['controller'] === "") {
       $this->controller = $this->_controllers['mal'];
     } else {
-      $this->delayedMessage("This thing doesn't exist!", "error");
+      $this->delayedMessage("This thing doesn't exist!", "danger");
       $this->logger->err("Controller doesn't exist: ".$_REQUEST['controller']."\n".print_r(array_keys($this->_controllers), True));
-      $this->redirect($this->user->url());
+      $this->redirect("/");
     }
     $controllerName = get_class($this->controller);
     $this->model = $controllerName::MODEL_NAME();
@@ -545,7 +583,7 @@ class Application {
       }
     } catch (DbException $e) {
       $this->statsd->increment("DbException");
-      \Application::display_error(404);
+      $this->display_error(404);
     }
     if ($this->target->id === 0 && $this->action === "edit") {
       $this->action = "new";
@@ -554,7 +592,7 @@ class Application {
       $targetClass = get_class($this->target);
       $error = new AppException($this, $this->user->name." attempted to ".$this->action." ".$targetClass." ID#".$this->target->id);
       $this->logger->warning($error->__toString());
-      \Application::display_error(403);
+      $this->display_error(403);
     } else {
       header('X-Frame-Options: SAMEORIGIN');
       try {
@@ -568,12 +606,12 @@ class Application {
       } catch (AppException $e) {
         $this->logger->err($e->__toString());
         $this->clearOutput();
-        \Application::display_exception($e);
+        $this->display_exception($e);
       } catch (Exception $e) {
         $this->statsd->increment("Exception");
         $this->logger->err($e->__toString());
         $this->clearOutput();
-        \Application::display_error(500);
+        $this->display_error(500);
       }
     }
   }
@@ -623,10 +661,10 @@ class Application {
     ]);
   }
 
-  public static function view($view="index", $params=Null) {
+  public function view($view="index", $params=Null) {
     // includes a provided application-level view.
     $file = joinPaths(Config::FS_ROOT, 'views', 'application', "$view.php");
-    return new View($file, $params);
+    return new View($this, $file, $params);
   }
   public function render(\View $view, $params=Null) {
     // renders the given HTML text surrounded by the standard application header and footer.
@@ -637,9 +675,9 @@ class Application {
         $appVars[$key] = $value;
       }
     }
-    $completeView = $view->copyAttrsTo(\Application::view('header', $appVars));
+    $completeView = $view->copyAttrsTo($this->view('header', $appVars));
     $completeView->append($view)
-                  ->append($view->copyAttrsTo(\Application::view('footer', $appVars)));
+                  ->append($view->copyAttrsTo($this->view('footer', $appVars)));
     return $completeView->render();
   }
 

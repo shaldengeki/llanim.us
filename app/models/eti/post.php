@@ -47,7 +47,7 @@ class Post extends Base {
     ]
   ];
 
-  public $nodes;
+  public $nodes, $text, $quotes, $images, $spoilers, $links, $user, $topic;
 
   public function parse() {
     $nodes = [];
@@ -87,7 +87,7 @@ class Post extends Base {
     }
     //load document.
     libxml_use_internal_errors(True);
-    $dom = new \DOM();
+    $dom = new \Dom\Dom();
     $dom->loadHTML('<?xml encoding="UTF-8">'.$this->html);
     // dirty fix
     foreach ($dom->childNodes as $item) {
@@ -138,7 +138,7 @@ class Post extends Base {
             $quoteDivElt->parentNode->removeChild($quoteDivElt);
           }
         }
-        $newP = new \DOMElement('p', get_inner_html($divElt));
+        $newP = new \DOMElement('p', \Dom\DomNode::GetInnerHTML($divElt));
         $divElt->parentNode->removeChild($divElt);
 
       }
@@ -276,8 +276,8 @@ class Post extends Base {
     return $this->text;
   }
 
-  function __construct(\DbConn $db, $id) {
-    parent::__construct($db, $id);
+  function __construct(\Application $app, $id) {
+    parent::__construct($app, $id);
   }
   public function nodes() {
     if (!isset($this->nodes) || !is_array($this->nodes)) {

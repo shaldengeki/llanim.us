@@ -6,7 +6,7 @@ class Corpus {
     $this->length = 0;
   }
   public function add(Document $doc) {
-    $doc->corpus = $this;
+    $doc->corpus($this);
     $this->documents[] = $doc;
     $this->length++;
     foreach ($doc->tfs() as $word=>$count) {

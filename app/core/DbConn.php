@@ -306,11 +306,12 @@ class DbQueueException extends Exception { }
 
 class DbQueue {
   // insert queue for database.
-  private $dbConn, $maxLength, $table, $fields, $rows, $length, $ignore, $numFields;
+  private $dbConn, $maxLength, $table, $fields, $rows, $length, $ignore, $update, $numFields;
   public function __construct(DbConn $dbConn, $table, array $fields, $maxLength=50) {
     $this->dbConn = $dbConn;
     $this->table = $table;
     $this->numFields = 0;
+    $this->update = Null;
     $this->fields($fields)->maxLength($maxLength)->ignore(False);
   }
   public function clear() {
@@ -341,12 +342,16 @@ class DbQueue {
     $this->ignore = (bool) $ignore;
     return $this;
   }
+  public function onDuplicateUpdate($update) {
+    $this->update = $update;
+    return $this;
+  }
   public function insert(array $row) {
     $newRow = [];
     $rowFields = 0;
     foreach ($this->fields as $field=>$foo) {
       if (isset($row[$field])) {
-        $newRow[] = $this->dbConn->escape($row[$field], True);
+        $newRow[] = $this->dbConn->quote($row[$field], True);
         $rowFields++;
       }
     }
@@ -361,7 +366,15 @@ class DbQueue {
   }
   public function flush() {
     if ($this->rows) {
-      $this->dbConn->query("INSERT".($this->ignore ? " IGNORE" : "")." INTO ".$this->table." (".implode(",", array_keys($this->fields)).") VALUES ".implode(",", $this->rows));
+      $query = "INSERT";
+      if ($this->ignore) {
+        $query .= " IGNORE";
+      }
+      $query .= " INTO ".$this->table." (".implode(",", array_keys($this->fields)).") VALUES ".implode(",", $this->rows);
+      if ($this->update) {
+        $query .= " ON DUPLICATE KEY UPDATE ".$this->update;
+      }
+      $this->dbConn->query($query);
     }
     $this->clear();
   }

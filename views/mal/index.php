@@ -1,6 +1,6 @@
 <?php
-  require_once($_SERVER['DOCUMENT_ROOT']."/app/include.php");
-  \Application::check_partial_include(__FILE__);
+  require_once(Config::FS_ROOT."/app/include.php");
+  $this->app->check_partial_include(__FILE__);
 ?>
 <h2>SAT stuff is up! <small>09/11/2013</small></h2>
 <p>

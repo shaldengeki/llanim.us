@@ -1,6 +1,6 @@
 <?php
   require_once($_SERVER['DOCUMENT_ROOT']."/app/include.php");
-  \Application::check_partial_include(__FILE__);
+  $this->app->check_partial_include(__FILE__);
 
   $this->attrs['topics'] = $this->getDefaultAttr('topics', []);
   $this->attrs['posts'] = $this->getDefaultAttr('posts', []);

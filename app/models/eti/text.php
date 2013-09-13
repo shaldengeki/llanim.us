@@ -5,7 +5,7 @@ class Text extends PostNode {
   public $text;
 
   public static function parse(\DOMNode $node) {
-    $newDOM = new \DOM();
+    $newDOM = new \Dom\Dom();
     $newDOM->appendChild($newDOM->importNode($node, True));
     return new Text($newDOM->saveHTML());
   }

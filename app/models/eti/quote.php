@@ -29,7 +29,7 @@ class Quote extends PostNode {
   }
   public static function quoteText(\DOMNodeList $nodeList, $offset) {
     // get all nodes up until the next quote node to fetch text.
-    $newDOM = new \DOM();
+    $newDOM = new \Dom\Dom();
     for ($j = $offset; $j < $nodeList->length && !Quote::isNode($nodeList->item($j)); $j++) {
       $newDOM->appendChild($newDOM->importNode($nodeList->item($j), True));
     }

@@ -2,7 +2,7 @@
 namespace SAT;
 
 class Topic extends \Model {
-  public static $DB = "llAnimu";
+  public static $DB = "SAT";
   public static $TABLE = "sats";
   public static $PLURAL = "SATs";
   public static $FIELDS = [
@@ -30,7 +30,7 @@ class Topic extends \Model {
   ];
 
   public function getTerms($limit=Null) {
-    $this->db()->table('topic_tfidfs')
+    $this->db()->table('sat_tfidfs')
               ->where([
                       'll_topicid' => $this->id
                       ])
@@ -53,12 +53,12 @@ class Topic extends \Model {
   }
   
   public function getPostCounts($limit=Null) {
-    $postCountQuery = $this->db()->table(\ETI\Post::DB_NAME($this->app).'.'.\ETI\Post::$TABLE)
-                                  ->fields(\ETI\Post::$FIELDS['user_id']['db'].' AS user_id', 'COUNT(*) AS count')
+    $postCountQuery = $this->db()->table(\ETI\Post::FULL_TABLE_NAME($this->app))
+                                  ->fields(\ETI\Post::DB_FIELD('user_id').' AS user_id', 'COUNT(*) AS count')
                                   ->where([
-                                          \ETI\Post::$FIELDS['topic_id']['db'] => $this->id
+                                          \ETI\Post::DB_FIELD('topic_id') => $this->id
                                           ])
-                                  ->group(\ETI\Post::$FIELDS['user_id']['db'])
+                                  ->group(\ETI\Post::DB_FIELD('user_id'))
                                   ->order('count DESC')
                                   ->query();
     $postCounts = [];

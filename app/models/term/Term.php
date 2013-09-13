@@ -2,8 +2,8 @@
 namespace Term;
 
 class Term extends \Model {
-  public static $DB = "llAnimu";
-  public static $TABLE = "topic_tfidfs";
+  public static $DB = "SAT";
+  public static $TABLE = "sat_tfidfs";
   public static $PLURAL = "Terms";
   public static $FIELDS = [
     'id' => [
@@ -14,7 +14,7 @@ class Term extends \Model {
   public static $JOINS = [
     'topics' => [
       'obj' => '\\SAT\\Topic',
-      'table' => 'seinma_llanimu.topic_tfidfs',
+      'table' => 'seinma_llanimu.sat_tfidfs',
       'own_col' => 'term',
       'join_col' => 'term',
       'type' => 'many'

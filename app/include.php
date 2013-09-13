@@ -1,5 +1,5 @@
 <?php
-require_once($_SERVER['DOCUMENT_ROOT']."/app/Application.php");
+require_once("Application.php");
 $app = new Application();
 $app->init();
 ?>

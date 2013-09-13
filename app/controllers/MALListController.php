@@ -16,9 +16,9 @@ class MALListController extends \BaseController {
   }
 
   public function render($object) {
-    $header = \Application::view('header');
-    $footer = \Application::view('footer');
-    $resultView = new \View(joinPaths(\Config::FS_ROOT, "views", "mal", $this->app->action.".php"), ['app' => $this->app]);
+    $header = $this->app->view('header');
+    $footer = $this->app->view('footer');
+    $resultView = new \View($this->app, joinPaths(\Config::FS_ROOT, "views", "mal", $this->app->action.".php"), ['app' => $this->app]);
     switch ($this->app->action) {
       default:
         $header->attrs['title'] = $header->attrs['subtitle'] = "Welcome!";

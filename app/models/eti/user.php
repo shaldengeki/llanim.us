@@ -59,12 +59,12 @@ class User extends Base {
   }
 
   public function getPostCounts($limit=Null) {
-    $this->db()->table(Post::DB_NAME($this->app).'.'.Post::$TABLE)
-              ->fields(Post::$FIELDS['user_id']['db'].' AS user_id', 'COUNT(*) AS count')
+    $this->db()->table(Post::FULL_TABLE_NAME($this->app))
+              ->fields(Post::DB_FIELD('user_id').' AS user_id', 'COUNT(*) AS count')
               ->where([
-                      Post::$FIELDS['topic_id']['db'] => $this->id
+                      Post::DB_FIELD('topic_id') => $this->id
                       ])
-              ->group(Post::$FIELDS['user_id']['db'])
+              ->group(Post::DB_FIELD('user_id'))
               ->order('count DESC');
     if ($limit !== Null) {
       $this->db()->limit(intval($limit));

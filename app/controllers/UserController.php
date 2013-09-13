@@ -16,9 +16,9 @@ class UserController extends \BaseController {
   }
 
   public function render($object) {
-    $header = \Application::view('header');
-    $footer = \Application::view('footer');
-    $resultView = new \View(joinPaths(\Config::FS_ROOT, "views", static::MODEL_URL(), $this->app->action.".php"), ['app' => $this->app]);
+    $header = $this->app->view('header');
+    $footer = $this->app->view('footer');
+    $resultView = new \View($this->app, joinPaths(\Config::FS_ROOT, "views", static::MODEL_URL(), $this->app->action.".php"), ['app' => $this->app]);
     switch ($this->app->action) {
       case 'log_in':
         // check to see if this user is signed into ETI.
@@ -72,7 +72,7 @@ class UserController extends \BaseController {
         $userIDs[] = $object->main()->id;
 
         // user post timeline.
-        $startAndEndTimes = $object->db()->table(\ETI\Post::DB_NAME($this->app).'.'.\ETI\Post::$TABLE)
+        $startAndEndTimes = $object->db()->table(\ETI\Post::FULL_TABLE_NAME($this->app))
                                   ->fields("MIN(".\ETI\Post::$FIELDS['date']['db'].") AS start_time", "MAX(".\ETI\Post::$FIELDS['date']['db'].") AS end_time")
                                   ->where([
                                           \ETI\Post::$FIELDS['user_id']['db'] => $userIDs,
@@ -95,7 +95,7 @@ class UserController extends \BaseController {
           $groupBySeconds = 3600;
         }
 
-        $userTimeline = $object->db()->table(\ETI\Post::DB_NAME($this->app).'.'.\ETI\Post::$TABLE)
+        $userTimeline = $object->db()->table(\ETI\Post::FULL_TABLE_NAME($this->app))
                                 ->fields("ROUND(".\ETI\Post::$FIELDS['date']['db']."/".intval($groupBySeconds).")*".intval($groupBySeconds)." AS time, COUNT(*) AS count")
                                 ->where([
                                         \ETI\Post::$FIELDS['user_id']['db'] => $userIDs,
@@ -127,7 +127,7 @@ class UserController extends \BaseController {
         $footer->googleChart($timelineAttrs, $userTimeline, $timelineSeriesProperties);
 
         // hourly post graph.
-        $hourlyPosts = $object->db()->table(\ETI\Post::DB_NAME($this->app).'.'.\ETI\Post::$TABLE)
+        $hourlyPosts = $object->db()->table(\ETI\Post::FULL_TABLE_NAME($this->app))
                                         ->fields("HOUR(FROM_UNIXTIME(".\ETI\Post::$FIELDS['date']['db']."+".intval($this->app->timeZoneOffset).")) AS hour, COUNT(*) AS count")
                                         ->where([
                                                 \ETI\Post::$FIELDS['user_id']['db'] => $userIDs,
@@ -155,7 +155,7 @@ class UserController extends \BaseController {
 
         // sat authors, sorted by post counts
         $topics = [];
-        $postCounts = $object->db()->table(\ETI\Post::DB_NAME($this->app).'.'.\ETI\Post::$TABLE)
+        $postCounts = $object->db()->table(\ETI\Post::FULL_TABLE_NAME($this->app))
                                     ->fields(\ETI\Post::$FIELDS['topic_id']['db'].' AS topic_id', 'COUNT(*) AS count')
                                     ->where([
                                             \ETI\Post::$FIELDS['user_id']['db'] => $userIDs,

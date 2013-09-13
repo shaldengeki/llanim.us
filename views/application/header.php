@@ -109,6 +109,15 @@
         </script>
       </div>
 <?php
+  foreach ($this->app->allMessages() as $message) {
+?>
+      <div class='alert alert-dismissable<?php echo isset($message['class']) ? " alert-".$this->escape($message['class']) : ""; ?>'>
+    <button type='button' class='close' data-dismiss='alert'>&times;</button>
+  <?php echo $message['text']; ?></div>
+<?php
+  }
+  $this->app->clearAllMessages();
+
   if (isset($this->attrs['subtitle'])) {
 ?>
       <div class="page-header">

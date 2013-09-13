@@ -15,7 +15,7 @@ $files = [
 ];
 
 foreach ($files as $file) {
-  require_once('app/models/eti/'.$file);
+  require_once(Config::FS_ROOT.'/app/models/eti/'.$file);
 }
 
 ?>

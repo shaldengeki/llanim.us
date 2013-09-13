@@ -2,7 +2,7 @@
 namespace SAT;
 
 class User extends \Model {
-  public static $DB = "llAnimu";
+  public static $DB = "SAT";
   public static $TABLE = "sat_users";
   public static $PLURAL = "Infos";
   public static $FIELDS = [
@@ -92,7 +92,7 @@ class User extends \Model {
   public function alts() {
     if ($this->alts === Null) {
       $alts = $this->db()->table('sat_users_alts')
-                            ->join(\ETI\User::DB_NAME($this->app).'.'.\ETI\User::$TABLE." ON sat_users_alts.alt_id=".\ETI\User::$TABLE.".".\ETI\User::$FIELDS['id']['db'])
+                            ->join(\ETI\User::FULL_TABLE_NAME($this->app)." ON sat_users_alts.alt_id=".\ETI\User::FULL_DB_FIELD_NAME($this->app, 'id'))
                             ->where([
                                     'sat_users_alts.main_id' => $this->main()->id
                                     ])
@@ -104,7 +104,7 @@ class User extends \Model {
           unset($alts[$this->main_id]);
         }
         $this->alts = array_map(function($alt) {
-          $newUser = new \ETI\User($this->app, $alt[\ETI\User::$FIELDS['id']['db']]);
+          $newUser = new \ETI\User($this->app, $alt[\ETI\User::DB_FIELD('id')]);
           return $newUser->set($alt);
         }, $alts);
       }

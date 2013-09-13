@@ -16,16 +16,16 @@ class TopicController extends \BaseController {
   }
 
   public function render($object) {
-    $header = \Application::view('header');
-    $footer = \Application::view('footer');
-    $resultView = new \View(joinPaths(\Config::FS_ROOT, "views", static::MODEL_URL(), $this->app->action.".php"), ['app' => $this->app]);
+    $header = $this->app->view('header');
+    $footer = $this->app->view('footer');
+    $resultView = new \View($this->app, joinPaths(\Config::FS_ROOT, "views", static::MODEL_URL(), $this->app->action.".php"), ['app' => $this->app]);
     switch ($this->app->action) {
       case 'show':
         $object->load('topic');
         $header->attrs['title'] = $header->attrs['subtitle'] = $object->topic->title;
 
         // sat post graph.
-        $startAndEndTimes = $object->db()->table(\ETI\Post::DB_NAME($this->app).'.'.\ETI\Post::$TABLE)
+        $startAndEndTimes = $object->db()->table(\ETI\Post::FULL_TABLE_NAME($this->app))
                                   ->fields("MIN(".\ETI\Post::$FIELDS['date']['db'].") AS start_time", "MAX(".\ETI\Post::$FIELDS['date']['db'].") AS end_time")
                                   ->where([
                                           \ETI\Post::$FIELDS['topic_id']['db'] => $object->id
@@ -47,7 +47,7 @@ class TopicController extends \BaseController {
           $groupBySeconds = 3600;
         }
 
-        $satTimeline = $object->db()->table(\ETI\Post::DB_NAME($this->app).'.'.\ETI\Post::$TABLE)
+        $satTimeline = $object->db()->table(\ETI\Post::FULL_TABLE_NAME($this->app))
                               ->fields("ROUND(".\ETI\Post::$FIELDS['date']['db']."/".intval($groupBySeconds).")*".intval($groupBySeconds)." AS time, COUNT(*) AS count")
                               ->where([
                                       \ETI\Post::$FIELDS['topic_id']['db'] => $object->id
@@ -135,7 +135,7 @@ class TopicController extends \BaseController {
 
         // now get a paginated list of SATs.
         $offset = ($this->app->page - 1) * $satsPerPage;
-        $satRows = $this->app->dbs['llAnimu']->table(\SAT\Topic::$TABLE)
+        $satRows = $this->app->dbs['SAT']->table(\SAT\Topic::$TABLE)
                                               ->where([
                                                       'completed' => 1
                                                       ])

@@ -16,9 +16,9 @@ class TermController extends \BaseController {
   }
 
   public function render($object) {
-    $header = \Application::view('header');
-    $footer = \Application::view('footer');
-    $resultView = new \View(joinPaths(\Config::FS_ROOT, "views", static::MODEL_URL(), $this->app->action.".php"), ['app' => $this->app]);
+    $header = $this->app->view('header');
+    $footer = $this->app->view('footer');
+    $resultView = new \View($this->app, joinPaths(\Config::FS_ROOT, "views", static::MODEL_URL(), $this->app->action.".php"), ['app' => $this->app]);
     switch ($this->app->action) {
       case 'show':
         $header->attrs['title'] = $header->attrs['subtitle'] = $object->id;

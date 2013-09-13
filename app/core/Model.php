@@ -73,6 +73,13 @@ abstract class Model {
   */
   public static $DB, $TABLE, $PLURAL, $FIELDS, $JOINS;
 
+  public static function DB_FIELD($field) {
+    // takes a nice property-name and returns the corresponding db column name.
+    if (!isset(static::$FIELDS[$field])) {
+      throw new ModelException("Unknown field: ".$field);
+    }
+    return static::$FIELDS[$field]['db'];
+  }
   public static function DB_FIELDS() {
     // inverts db_column_name and object_attribute_name in static::$FIELDS
     $invertedFields = [];
@@ -86,6 +93,13 @@ abstract class Model {
   }
   public static function DB_NAME(\Application $app) {
     return $app->dbs[static::$DB]->database();
+  }
+  public static function FULL_TABLE_NAME(\Application $app) {
+    return static::DB_NAME($app).'.'.static::$TABLE;
+  }
+  public static function FULL_DB_FIELD_NAME(\Application $app, $field) {
+    // takes a nice property-name and returns the corresponding db.table.column_name
+    return static::DB_NAME($app).'.'.static::$TABLE.'.'.static::DB_FIELD($field);
   }
   public static function Get(\Application $app, $params=Null) {
     if ($params === Null) {

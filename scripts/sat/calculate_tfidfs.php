@@ -1,6 +1,6 @@
 <?php
 
-// calculate_tfidfs.php [--start START_TOPIC_ID]
+// calculate_tfidfs.php [--start=START_TOPIC_ID]
 // calculates tf-idfs for each SAT starting from a given (optional) SAT topic ID.
 
 require_once("../../app/Application.php");

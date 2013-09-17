@@ -11,7 +11,10 @@ $files = [
   'image.php',
   'spoiler.php',
   'tag.php',
-  'topic.php'
+  'topic.php',
+  'privatemessage.php',
+  'pmthread.php',
+  'connection.php'
 ];
 
 foreach ($files as $file) {

@@ -12,67 +12,76 @@ class CurlException extends Exception {
 class Curl {
   use Loggable;
 
-  protected $curl, $url, $cookie, $agent, $encoding, $referer;
+  protected $curl, $opts;
   public function __construct($url) {
     $this->reset();
     $this->unlog()->url($url);
+  }
+  protected function setOpt($opt, $value) {
+    curl_setopt($this->curl, constant("CURLOPT_".$opt), $value);
+    $this->opts[$opt] = $value;
+    return $this;
+  }
+  protected function setOpts($opts) {
+    foreach ($opts as $opt=>$value) {
+      $this->setOpt($opt, $value);
+    }
+    return $this;
   }
   public function reset() {
     if ($this->curl) {
       curl_close($this->curl);
     }
     $this->curl = curl_init();
-    curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, True);
-    curl_setopt($this->curl, CURLOPT_MAXREDIRS, 2);
+    $this->opts = [];
+    $this->setOpts([
+                   "RETURNTRANSFER" => True,
+                   "MAXREDIRS" => 100
+                   ]);
     $this->cookie("")
       ->agent("LLAnim.us")
       ->encoding("gzip,deflate")
-      ->referer(Config::ROOT_URL)
+      ->referer("")
       ->ssl(False)
       ->timeout(5000)
+      ->header(False)
       // ->connectTimeout(500)
       ->follow();
     return $this;
   }
   public function url($url) {
-    curl_setopt($this->curl, CURLOPT_URL, $url);
-    return $this;
+    return $this->setOpt("URL", $url);
   }
   public function cookie($cookie) {
-    curl_setopt($this->curl, CURLOPT_COOKIE, $cookie);
-    return $this;
+    return $this->setOpt("COOKIE", $cookie);
   }
   public function agent($agent) {
-    curl_setopt($this->curl, CURLOPT_USERAGENT, $agent);
-    return $this;
+    return $this->setOpt("USERAGENT", $agent);
   }
   public function encoding($encoding) {
-    curl_setopt($this->curl, CURLOPT_ENCODING, $encoding);
-    return $this;
+    return $this->setOpt("ENCODING", $encoding);
   }
   public function referer($referer) {
-    curl_setopt($this->curl, CURLOPT_REFERER, $referer);
-    return $this;
+    return $this->setOpt("REFERER", $referer);
   }
   public function ssl($ssl=True) {
-    curl_setopt($this->curl, CURLOPT_SSL_VERIFYPEER, $ssl);
-    return $this;
+    return $this->setOpt("SSL_VERIFYPEER", (bool) $ssl);
   }
   public function follow($follow=True) {
-    curl_setopt($this->curl, CURLOPT_FOLLOWLOCATION, $follow);
-    return $this;
+    return $this->setOpt("FOLLOWLOCATION", (bool) $follow);
   }
   public function timeout($timeout) {
-    curl_setopt($this->curl, CURLOPT_TIMEOUT_MS, $timeout);
-    return $this;
+    return $this->setOpt("TIMEOUT_MS", $timeout);
   }
   public function connectTimeout($connectTimeout) {
-    curl_setopt($this->curl, CURLOPT_CONNECTTIMEOUT_MS, $connectTimeout);
-    return $this;
+    return $this->setOpt("CONNECTTIMEOUT_MS", $connectTimeout);
   }
-  public function fields($fields) {
-    curl_setopt($this->curl, CURLOPT_POSTFIELDS, $fields);
-    return $this;
+  public function fields(array $fields) {
+    return $this->setOpt("POSTFIELDS", http_build_query($fields));
+  }
+  public function header($header=True) {
+    $this->setOpt("HEADER", (bool) $header);
+    return $this->setOpt("NOBODY", (bool) $header);
   }
   public function get() {
     $result = curl_exec($this->curl);
@@ -80,6 +89,7 @@ class Curl {
     if ($this->canLog()) {
       $this->logger->err("Got URL: ".curl_getinfo($this->curl, CURLINFO_EFFECTIVE_URL));
       $this->logger->err("Transfer info: ".print_r(curl_getinfo($this->curl), True));
+      $this->logger->err("Opts: ".print_r($this->opts, True));
       $this->logger->err("Result: ".$result);
       $this->logger->err("Error: ".$curlError);
     }

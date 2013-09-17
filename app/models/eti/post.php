@@ -85,18 +85,7 @@ class Post extends Base {
     if (!isset($this->html)) {
       $this->load();
     }
-    //load document.
-    libxml_use_internal_errors(True);
-    $dom = new \Dom\Dom();
-    $dom->loadHTML('<?xml encoding="UTF-8">'.$this->html);
-    // dirty fix
-    foreach ($dom->childNodes as $item) {
-      if ($item->nodeType == XML_PI_NODE) {
-        $dom->removeChild($item); // remove hack
-      }
-    }
-    $dom->encoding = 'UTF-8'; // insert proper
-    $this->dom = $dom;
+    $this->dom = static::CreateDom($this->html);
   }
 
   protected function getText() {
@@ -339,6 +328,27 @@ class Post extends Base {
       $this->topic = new Topic($this->app,  (int) $this->topic_id);
     }
     return $this->topic;
+  }
+
+  public function exclude() {
+    // returns a new Post with all of the types of nodes in get_func_args() stripped out.
+
+    $excludeTypes = func_get_args();
+    $newNodeSet = [];
+    foreach ($this->nodes() as $node) {
+      if (!in_array($node->nodeType(), $excludeTypes)) {
+        $newNodeSet[] = $node;
+      }
+    }
+    $newPost = new Post($this->app, $this->id);
+    $newPost->set([
+                  'topic_id' => $this->topic->id,
+                  'topic' => $this->topic,
+                  'user_id' => $this->user->id,
+                  'user' => $this->user,
+                  'nodes' => $newNodeSet
+                  ]);
+    return $newPost;
   }
 
   public function render() {

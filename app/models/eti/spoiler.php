@@ -75,7 +75,7 @@ class Spoiler extends PostNode {
     $this->text = $text;
 
     // get nested nodes.
-    $dom = static::getDOM($this->text);
+    $dom = static::CreateDom($this->text);
     $this->nodes = static::getNested($dom);
   }
   public function render(\DbConn $db, $id="u0_1") {

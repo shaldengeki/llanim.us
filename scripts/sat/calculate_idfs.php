@@ -1,5 +1,5 @@
 <?php
-// calculate_idfs.php [--start START_TOPIC_ID]
+// calculate_idfs.php [--start=START_TOPIC_ID]
 // for each SAT since the provided ID (optional), gets all posts and splits them into bag-of-words
 // for each word, calculates number of posts containing that word and saves the counts to sat_tfs
 // also calculates grand total counts for each word across all calculated topics and saves the counts to sat_idfs

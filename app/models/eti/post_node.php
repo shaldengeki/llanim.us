@@ -7,20 +7,6 @@ namespace ETI;
 
   public $dom, $nodes;
 
-  public static function getDOM($html) {
-    //load document.
-    libxml_use_internal_errors(True);
-    $dom = new \Dom\Dom();
-    $dom->loadHTML('<?xml encoding="UTF-8">'.$html);
-    // dirty fix
-    foreach ($dom->childNodes as $item) {
-      if ($item->nodeType == XML_PI_NODE) {
-        $dom->removeChild($item); // remove hack
-      }
-    }
-    $dom->encoding = 'UTF-8'; // insert proper
-    return $dom;
-  }
   public static function getNested(\DOMDocument $dom) {
     $nodes = [];
     if (!$dom->documentElement || !$dom->documentElement->childNodes) {
@@ -49,6 +35,10 @@ namespace ETI;
     }
     return $nodes;
   }
+  public function nodeType() {
+    return get_called_class();
+  }
+
   public static function isNode(\DOMNode $node) {
     // returns a bool.
     return False;

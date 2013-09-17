@@ -4,6 +4,21 @@ namespace ETI;
 abstract class Base extends \Model {
   public static $DB = "ETI";
 
+  public static function CreateDom($html) {
+    // load DOM.
+    libxml_use_internal_errors(True);
+    $dom = new \Dom\Dom();
+    $dom->loadHTML('<?xml encoding="UTF-8">'.$html);
+    // dirty fix
+    foreach ($dom->childNodes as $item) {
+      if ($item->nodeType == XML_PI_NODE) {
+        $dom->removeChild($item); // remove hack
+      }
+    }
+    $dom->encoding = 'UTF-8'; // insert proper
+    return $dom;    
+  }
+
   public static function searchNodeType($nodes, $type, &$result=Null, $exclude=[]) {
     // recursively searches for instances of $type within a list of nodes $nodes, 
     // optionally appending the instances to $result.

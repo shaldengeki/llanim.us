@@ -12,6 +12,9 @@ class Config {
   const DB_PASSWORD       = 'db_pass';
   public static $DB_NAMES = ['accessor_name' => 'db_name'];
   
+  const ETI_USERNAME      = 'LLamaGuy';
+  const ETI_PASSWORD      = 'hunter2';
+  
   const FS_ROOT           = '/path/to/app/root';
   const URL_ROOT          = 'http://app.domain.here';
   

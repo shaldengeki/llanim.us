@@ -80,14 +80,14 @@ class PrivateMessage extends Post {
     return $newPost;
   }
 
-  public function render() {
+  public function render(\View $view) {
     $user = $this->user();
     $thread = $this->thread();
     $date = $this->date->format('n/j/Y h:i:s A');
 
     $contents = "";
     foreach ($this->nodes() as $node) {
-      $contents .= $node->render($this->db());
+      $contents .= $node->render($view);
     }
 
     return <<<POST_MARKUP

@@ -48,7 +48,8 @@ $satQueue->onDuplicateUpdate('freq=freq+VALUES(freq)');
 $stopwords = loadStopWords();
 
 $sats = \SAT\Topic::GetList($app, [
-                            \SAT\Topic::$FIELDS['id']['db'].' >= '.intval($app->cliOpts['start'])
+                            \SAT\Topic::DB_FIELD('id').' >= '.intval($app->cliOpts['start']),
+                            \SAT\Topic::DB_FIELD('completed') => 1
                             ]);
 $numSATs = count($sats);
 for ($i = 0; $i < $numSATs; $i++) {

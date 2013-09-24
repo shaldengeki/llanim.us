@@ -46,7 +46,7 @@ class Tag extends Base {
                             ->query();
     $this->staff = [];
     while ($staff = $staffQuery->fetch()) {
-      $newUser = new User($this->db(), $staff['user_id']);
+      $newUser = new User($this->app, $staff['user_id']);
       $this->staff[] = [
         'user' => $newUser->set($staff),
         'role' => $staff['role']
@@ -81,7 +81,7 @@ class Tag extends Base {
                         ->order('topics.lastPostTime DESC')
                         ->query();
     while ($join = $joins->fetch()) {
-      $newTopic = new Topic($this->db(), $join['topic_id']);
+      $newTopic = new Topic($this->app, $join['topic_id']);
       $this->topics[] = $newTopic->set($join);
     }
     return $this->topics;

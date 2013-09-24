@@ -42,7 +42,7 @@ class User extends \Model {
   ];
 
 
-  public $main_id, $main, $alts, $alt_ids;
+  public $main_id, $main, $alts, $alt_ids, $posts;
 
   public function __construct(\Application $app, $id) {
     parent::__construct($app, $id);
@@ -119,6 +119,21 @@ class User extends \Model {
       }, $this->alts());
     }
     return $this->alt_ids;
+  }
+
+  public function posts($limit=50) {
+    if ($this->posts === Null) {
+      $this->app->db->log($this->app->logger);
+      $satIDs = array_map(function($sat) {
+        return $sat->id;
+      }, \SAT\Topic::GetList($this->app));
+      $this->posts = \ETI\Post::GetList($this->app, [
+                                          \ETI\Post::DB_FIELD('user_id') => $this->id,
+                                          \ETI\Post::DB_FIELD('topic_id') => $satIDs
+                                        ], (int) $limit);
+      $this->app->db->unlog();
+    }
+    return $this->posts;
   }
 }
 ?>

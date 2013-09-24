@@ -75,8 +75,8 @@ class UserController extends \BaseController {
         $startAndEndTimes = $object->db()->table(\ETI\Post::FULL_TABLE_NAME($this->app))
                                   ->fields("MIN(".\ETI\Post::$FIELDS['date']['db'].") AS start_time", "MAX(".\ETI\Post::$FIELDS['date']['db'].") AS end_time")
                                   ->where([
-                                          \ETI\Post::$FIELDS['user_id']['db'] => $userIDs,
-                                          \ETI\Post::$FIELDS['topic_id']['db'] => $satIDs
+                                          \ETI\Post::DB_FIELD('user_id') => $userIDs,
+                                          \ETI\Post::DB_FIELD('topic_id') => $satIDs
                                           ])
                                   ->firstRow();
         $startTime = $startAndEndTimes['start_time'];
@@ -98,8 +98,8 @@ class UserController extends \BaseController {
         $userTimeline = $object->db()->table(\ETI\Post::FULL_TABLE_NAME($this->app))
                                 ->fields("ROUND(".\ETI\Post::$FIELDS['date']['db']."/".intval($groupBySeconds).")*".intval($groupBySeconds)." AS time, COUNT(*) AS count")
                                 ->where([
-                                        \ETI\Post::$FIELDS['user_id']['db'] => $userIDs,
-                                        \ETI\Post::$FIELDS['topic_id']['db'] => $satIDs
+                                        \ETI\Post::DB_FIELD('user_id') => $userIDs,
+                                        \ETI\Post::DB_FIELD('topic_id') => $satIDs
                                         ])
                                 ->group('time')
                                 ->order('time ASC')
@@ -130,8 +130,8 @@ class UserController extends \BaseController {
         $hourlyPosts = $object->db()->table(\ETI\Post::FULL_TABLE_NAME($this->app))
                                         ->fields("HOUR(FROM_UNIXTIME(".\ETI\Post::$FIELDS['date']['db']."+".intval($this->app->timeZoneOffset).")) AS hour, COUNT(*) AS count")
                                         ->where([
-                                                \ETI\Post::$FIELDS['user_id']['db'] => $userIDs,
-                                                \ETI\Post::$FIELDS['topic_id']['db'] => $satIDs
+                                                \ETI\Post::DB_FIELD('user_id') => $userIDs,
+                                                \ETI\Post::DB_FIELD('topic_id') => $satIDs
                                                 ])
                                         ->group('hour')
                                         ->order('hour ASC')
@@ -153,27 +153,42 @@ class UserController extends \BaseController {
         $footer->googleChart($hourlyAttrs, $hourlyPosts, $hourlySeriesProperties);
 
 
-        // sat authors, sorted by post counts
+        // sats, sorted by post counts
         $topics = [];
         $postCounts = $object->db()->table(\ETI\Post::FULL_TABLE_NAME($this->app))
-                                    ->fields(\ETI\Post::$FIELDS['topic_id']['db'].' AS topic_id', 'COUNT(*) AS count')
+                                    ->fields(\ETI\Post::DB_FIELD('topic_id').' AS topic_id', 'COUNT(*) AS count')
                                     ->where([
-                                            \ETI\Post::$FIELDS['user_id']['db'] => $userIDs,
-                                            \ETI\Post::$FIELDS['topic_id']['db'] => $satIDs
+                                            \ETI\Post::DB_FIELD('user_id') => $userIDs,
+                                            \ETI\Post::DB_FIELD('topic_id') => $satIDs
                                             ])
                                     ->group("topic_id")
                                     ->order("topic_id ASC")
                                     ->assoc('topic_id', 'count');
         foreach ($postCounts as $topicID => $count) {
-          $sat = new \SAT\Topic($this->app, intval($topicID));
+          $sat = new \SAT\Topic($this->app, (int) $topicID);
           $sat->load('topic');
           $topics[$topicID] = [
             'topic' => $sat->topic,
             'link' => $this->link($sat, $resultView, 'show', Null, Null, Null, $sat->topic->title),
-            'count' => intval($count)
+            'count' => (int) $count
           ];
         }
         $resultView->attrs['topics'] = $topics;
+
+        $posts = [];
+        $postQuery = $object->db()->table(\ETI\Post::FULL_TABLE_NAME($this->app))
+                                  ->where([
+                                          \ETI\Post::DB_FIELD('user_id') => $userIDs,
+                                          \ETI\Post::DB_FIELD('topic_id') => $satIDs
+                                          ])
+                                  ->order(\ETI\Post::DB_FIELD('id').' DESC')
+                                  ->limit(75)
+                                  ->query();
+        while ($post = $postQuery->fetch()) {
+          $newPost = new \ETI\Post($this->app, (int) $post[\ETI\Post::DB_FIELD('id')]);
+          $posts[$post[\ETI\Post::DB_FIELD('id')]] = $newPost->set($post);
+        }
+        $resultView->attrs['posts'] = $posts;
 
         // // sat tf-idfs
         // $terms = [];

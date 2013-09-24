@@ -27,15 +27,15 @@ class Link extends PostNode {
     }
     return $url->nodeValue;
   }
-  public static function parse(\DOMNode $node) {
+  public static function parse(\Application $app, \DOMNode $node) {
     if (!static::isNode($node)) {
       return False;
     }
     $url = static::linkURL($node);
-    return new Link($url);
+    return new Link($app, $url);
   }
-  public function __construct($url) {
-    parent::__construct();
+  public function __construct(\Application $app, $url) {
+    parent::__construct($app);
     $this->url = $url;
   }
   private function setComponents() {
@@ -72,8 +72,8 @@ class Link extends PostNode {
     return $this->components['fragment'];
   }
 
-  public function render(\DbConn $db, $id="u0_1") {
-    $escapedCaption = escape_output($this->caption);
+  public function render(\View $view, $id="u0_1") {
+    $escapedCaption = $view->escape($this->caption);
     $markup = <<<LINK_MARKUP
 <a class="l" target="_blank" title="{$this->url}" href="{$this->url}">
 LINK_MARKUP;

@@ -110,7 +110,7 @@ abstract class Model {
     $newObj = new $className($app, $objInfo[static::$FIELDS['id']['db']]);
     return $newObj->set($objInfo);
   }
-  public static function GetList(\Application $app, $params=Null) {
+  public static function GetList(\Application $app, $params=Null, $limit=Null) {
     if ($params === Null) {
       $params = [];
     }
@@ -119,6 +119,7 @@ abstract class Model {
     $objQuery = $app->dbs[static::$DB]->table(static::$TABLE)
                                       ->where($params)
                                       ->order(static::$FIELDS['id']['db']." ASC")
+                                      ->limit($limit)
                                       ->query();
     while ($dbObj = $objQuery->fetch()) {
       try {

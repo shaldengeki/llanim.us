@@ -79,7 +79,7 @@ class Image extends PostNode {
 
     return ['width' => $width, 'height' => $height];
   }
-  public static function parse(\DOMNode $node) {
+  public static function parse(\Application $app, \DOMNode $node) {
     if (!static::isContainer($node)) {
       return False;
     }
@@ -93,18 +93,18 @@ class Image extends PostNode {
       if (static::isNode($imageNode)) {
         $url = static::imageURL($imageNode);
         $dims = static::imageDims($imageNode);
-        $resultImages[] = new Image($url, $dims['width'], $dims['height']);
+        $resultImages[] = new Image($app, $url, $dims['width'], $dims['height']);
       }
     }
     return $resultImages;
   }
-  public function __construct($url, $width, $height) {
-    parent::__construct();
+  public function __construct(\Application $app, $url, $width, $height) {
+    parent::__construct($app);
     $this->url = $url;
     $this->width = intval($width);
     $this->height = intval($height);
   }
-  public function render(\DbConn $db, $id="u0_1") {
+  public function render(\View $view, $id="u0_1") {
     $jsUrl = str_replace("/", "\\/", $this->url);
     return <<<IMAGE_MARKUP
 <div class="imgs">

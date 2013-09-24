@@ -53,6 +53,13 @@
   </div>
   <div class='col-md-6 user-posts'>
     <h2>Recent posts:</h2>
-    <p>Coming soon!</p>
+<?php
+  foreach ($this->attrs['posts'] as $post) {
+    echo $post->render($this);
+?>
+<hr />
+<?php
+  }
+?>
   </div>
 </div>

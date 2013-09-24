@@ -59,21 +59,23 @@ class Post extends Base {
       for ($i = 0; $i < $childNodes->length; $i++) {
         $node = $childNodes->item($i);
         if (Quote::isNode($node)) {
-          $parseResult = Quote::parseQuote($childNodes, $i);
-          $nodes[] = $parseResult['quote'];
-          // $i = $parseResult['offset'];
+          $parseResult = Quote::parseQuote($this->app, $childNodes, $i);
+          if ($parseResult !== False) {
+            $nodes[] = $parseResult['quote'];
+            // $i = $parseResult['offset'];
+          }
           continue;
         } elseif (Image::isContainer($node)) {
-          $nodes = array_merge($nodes, Image::parse($node));
+          $nodes = array_merge($nodes, Image::parse($this->app, $node));
           continue;
         } elseif (Spoiler::isNode($node)) {
-          $nodes[] = Spoiler::parse($node);
+          $nodes[] = Spoiler::parse($this->app, $node);
           continue;
         } elseif (Link::isNode($node)) {
-          $nodes[] = Link::parse($node);
+          $nodes[] = Link::parse($this->app, $node);
           continue;
         } else {
-          $nodes[] = Text::parse($node);
+          $nodes[] = Text::parse($this->app, $node);
         }
       }
     }
@@ -351,14 +353,14 @@ class Post extends Base {
     return $newPost;
   }
 
-  public function render() {
+  public function render(\View $view) {
     $user = $this->user();
     $topic = $this->topic();
     $date = $this->date->format('n/j/Y h:i:s A');
 
     $contents = "";
     foreach ($this->nodes() as $node) {
-      $contents .= $node->render($this->db());
+      $contents .= $node->render($view);
     }
 
     return <<<POST_MARKUP

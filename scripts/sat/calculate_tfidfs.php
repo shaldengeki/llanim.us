@@ -16,7 +16,7 @@ $satQueue = new DbQueue($app->dbs['SAT'], "sat_tfidfs", ["ll_topicid", "term", "
 $satQueue->onDuplicateUpdate("tfidf=VALUES(tfidf)");
 
 $sats = \SAT\Topic::GetList($app, [
-                            'completed' => 1,
+                            \SAT\Topic::DB_FIELD('completed') => 1,
                             \SAT\Topic::DB_FIELD('id').' >= '.intval($app->cliOpts['start'])
                             ]);
 

@@ -35,39 +35,41 @@ class Quote extends PostNode {
     }
     return [$newDOM->saveHTML(), $j+1];
   }
-  public static function parseQuote(\DOMNodeList $nodeList, $offset) {
+  public static function parseQuote(\Application $app, \DOMNodeList $nodeList, $offset) {
     // $offset marks where the quote node is in $nodeList.
     if (!static::isNode($nodeList->item($offset))) {
       return False;
     }
     // start at $offset+2 when fetching text to skip over the quote and the appended <br /> after the quote.
     $id = static::quotedID($nodeList->item($offset));
+    if ($id === False) {
+      return False;
+    }
     list($text, $endOffset) = static::quoteText($nodeList, $offset+2);
-    return ['quote' => new Quote($id, $text), 'offset' => $endOffset];
+    return ['quote' => new Quote($app, new Post($app, $id), $text), 'offset' => $endOffset];
   }
 
-  public function __construct($quoting, $text) {
-    parent::__construct();
-    $this->quoting = intval($quoting);
+  public function __construct(\Application $app, Post $quoting, $text) {
+    parent::__construct($app);
+    $this->quoting = $quoting;
     $this->text = $text;
 
     // get nested nodes.
     $dom = static::CreateDom($this->text);
-    $this->nodes = static::getNested($dom);
+    $this->nodes = static::getNested($this->quoting->app, $dom);
   }
-  public function render(\DbConn $db) {
-    $quotedPost = new Post($db, $this->quoting);
-    $quotedDate = $quotedPost->date->format('n/j/Y h:i:s A');
+  public function render(\View $view) {
+    $quotedDate = $this->quoting->date->format('n/j/Y h:i:s A');
     $content = "";
     foreach ($this->nodes as $node) {
-      $content .= $node->render($db);
+      $content .= $node->render($view);
     }
     return <<<QUOTE_MARKUP
-<div class="quoted-message" msgid="t,{$quotedPost->topic_id},{$quotedPost->id}@0">
+<div class="quoted-message" msgid="t,{$this->quoting->topic_id},{$this->quoting->id}@0">
   <div class="message-top">
-    From: <a href="//endoftheinter.net/profile.php?user={$quotedPost->user_id}">{$quotedPost->user->name}</a> | Posted: {$quotedDate}
+    From: <a href="//endoftheinter.net/profile.php?user={$this->quoting->user_id}">{$this->quoting->user->name}</a> | Posted: {$quotedDate}
   </div>
-  {$quotedPost->html}
+  {$this->quoting->html}
 </div>
 QUOTE_MARKUP;
   }

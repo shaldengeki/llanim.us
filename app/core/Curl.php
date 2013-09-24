@@ -94,7 +94,7 @@ class Curl {
       $this->logger->err("Error: ".$curlError);
     }
     $this->reset();
-    if ($curlError || !$result) {
+    if ($curlError || $result === False) {
       throw new CurlException("Error: ".$curlError."\nResult: ".$result);
     } else {
       return $result;      

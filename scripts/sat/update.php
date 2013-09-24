@@ -126,7 +126,7 @@ if (isset($app->cliOpts['new'])) {
                                     ->join(\ETI\User::FULL_TABLE_NAME($app).' ON '.\ETI\User::FULL_DB_FIELD_NAME($app, 'id').'='.\SAT\User::FULL_DB_FIELD_NAME($app, 'id'))
                                     ->join('sat_users_alts ON sat_users_alts.main_id='.\SAT\User::FULL_DB_FIELD_NAME($app, 'id'))
                                     ->join('sat_postcounts ON sat_postcounts.ll_userid=sat_users_alts.alt_id')
-                                    ->fields(\SAT\User::FULL_DB_FIELD_NAME($app, 'id'), \ETI\User::FULL_DB_FIELD_NAME($app, 'name'), 'SUM(sat_postcounts.posts) AS total_posts')
+                                    ->fields(\SAT\User::FULL_DB_FIELD_NAME($app, 'id'), 'username', 'SUM(sat_postcounts.posts) AS total_posts')
                                     ->group(\SAT\User::FULL_DB_FIELD_NAME($app, 'id'))
                                     ->order('total_posts DESC')
                                     ->query();
@@ -230,25 +230,35 @@ if (isset($app->cliOpts['mal'])) {
         //get the MAL stats for this user.
         echo "Getting MAL list for userID ".$user->id.".\n";
         $curl = new \Curl("http://myanimelist.net/malappinfo.php?u=".$user->mal_name);
-        $malList = $curl->get();
-        $time = get_enclosed_string($malList, '<user_days_spent_watching>', '</user_days_spent_watching>');
-        $watching = get_enclosed_string($malList, '<user_watching>', '</user_watching>');
-        $completed = get_enclosed_string($malList, '<user_completed>', '</user_completed>');
-        $onHold = get_enclosed_string($malList, '<user_onhold>', '</user_onhold>');
-        $dropped = get_enclosed_string($malList, '<user_dropped>', '</user_dropped>');
-        $planToWatch = get_enclosed_string($malList, '<user_plantowatch>', '</user_plantowatch>');
+        try {
+          $malList = $curl->get();
+        } catch (CurlException $e) {
+          echo "Failed to retrieve MAL list for userID ".$user->id.": ".$e->getMessage()."\n";
+          continue;
+        }
+        $listXML = new \Dom\Dom();
+        $listXML->loadXML('<?xml version="1.0" encoding="utf-8"?>'.$malList);
+        $userInfoNode = $listXML->getElementsByTagName("myinfo")->item(0);
+
+        $time = (float) $userInfoNode->getElementsByTagName("user_days_spent_watching")->item(0)->textContent;
+        $watching = (int) $userInfoNode->getElementsByTagName("user_watching")->item(0)->textContent;
+        $completed = (int) $userInfoNode->getElementsByTagName("user_completed")->item(0)->textContent;
+        $onHold = (int) $userInfoNode->getElementsByTagName("user_onhold")->item(0)->textContent;
+        $dropped = (int) $userInfoNode->getElementsByTagName("user_dropped")->item(0)->textContent;
+        $planToWatch = (int) $userInfoNode->getElementsByTagName("user_plantowatch")->item(0)->textContent;
+
         //insert stats row.
         $app->dbs['SAT']->table('anime_stats')
                         ->set([
                               'userid' => intval($user->id),
                               'topicid' => intval($latestTopicID),
                               'timestamp' => intval(time()),
-                              'time' => doubleval($time),
-                              'watching' => intval($watching),
-                              'completed' => intval($completed),
-                              'onhold' => intval($onHold),
-                              'dropped' => intval($dropped),
-                              'plantowatch' => intval($planToWatch)
+                              'time' => $time,
+                              'watching' => $watching,
+                              'completed' => $completed,
+                              'onhold' => $onHold,
+                              'dropped' => $dropped,
+                              'plantowatch' => $planToWatch
                               ])
                         ->insert();
       }
@@ -278,7 +288,7 @@ if (isset($app->cliOpts['new'])) {
                                   ->join(\ETI\User::FULL_TABLE_NAME($app)." ON ".\ETI\User::FULL_DB_FIELD_NAME($app, 'id').'='.\SAT\User::FULL_DB_FIELD_NAME($app, 'id'))
                                   ->join('sat_users_alts ON sat_users_alts.main_id='.\SAT\User::FULL_DB_FIELD_NAME($app, 'id'))
                                   ->join('sat_postcounts ON sat_postcounts.ll_userid=sat_users_alts.alt_id')
-                                  ->fields(\SAT\User::FULL_DB_FIELD_NAME($app, 'id'), \ETI\User::FULL_DB_FIELD_NAME($app, 'name'), 'SUM(sat_postcounts.posts) AS total_posts')
+                                  ->fields(\SAT\User::FULL_DB_FIELD_NAME($app, 'id'), 'username', 'SUM(sat_postcounts.posts) AS total_posts')
                                   ->group(\SAT\User::FULL_DB_FIELD_NAME($app, 'id'))
                                   ->order('total_posts DESC')
                                   ->query();

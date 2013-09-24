@@ -60,30 +60,30 @@ class Spoiler extends PostNode {
     }
     return trim($text);
   }
-  public static function parse(\DOMNode $node) {
+  public static function parse(\Application $app, \DOMNode $node) {
     if (!static::isNode($node)) {
       return False;
     }
     $caption = static::spoilerCaption($node);
     $text = static::spoilerText($node);
 
-    return new Spoiler($caption, $text);
+    return new Spoiler($app, $caption, $text);
   }
-  public function __construct($caption, $text) {
-    parent::__construct();
+  public function __construct(\Application $app, $caption, $text) {
+    parent::__construct($app);
     $this->caption = $caption;
     $this->text = $text;
 
     // get nested nodes.
     $dom = static::CreateDom($this->text);
-    $this->nodes = static::getNested($dom);
+    $this->nodes = static::getNested($this->app, $dom);
   }
-  public function render(\DbConn $db, $id="u0_1") {
-    $escapedCaption = escape_output($this->caption);
+  public function render(\View $view, $id="u0_1") {
+    $escapedCaption = $view->escape($this->caption);
 
     $content = "";
     foreach ($this->nodes as $node) {
-      $content .= $node->render($db);
+      $content .= $node->render($view);
     }
 
     return <<<SPOILER_MARKUP

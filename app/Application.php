@@ -34,7 +34,6 @@ class AppException extends Exception {
     }
     parent::__construct($this->formatMessages(), $code, $previous);
     $this->app = $app;
-    $this->app->statsd->increment('AppException');
   }
   public function messages() {
     return $this->messages;
@@ -82,7 +81,7 @@ class Application {
   private $_classes=[],$_controllers=[],$_observers,$messages=[],$timings=[],$_statsdConn;
   // protected $totalPoints=Null;
   // public $achievements=[];
-  public $statsd, $logger, $cache, $dbs, $mailer, $serverTimeZone, $outputTimeZone, $timeZoneOffset, $user, $target, $startRender, $csrfToken=Null;
+  public $logger, $cache, $dbs, $mailer, $serverTimeZone, $outputTimeZone, $timeZoneOffset, $user, $target, $startRender, $view, $csrfToken=Null;
   public $cliOpts=[];
 
   public $model,$action,$status,$format,$class="";
@@ -160,19 +159,7 @@ class Application {
     $nowOutput = new \DateTime("now", $this->outputTimeZone);
     $this->timeZoneOffset = $this->outputTimeZone->getOffset($nowOutput) - $this->serverTimeZone->getOffset($nowServer);
 
-    require_once Config::FS_ROOT.'/vendor/autoload.php';
-
-    /*
-    try {
-      $this->statsd = $this->_connectStatsD();
-    } catch (Exception $e) {
-      // we don't ~technically~ need statsd to run the site. Log an exception.
-    */
-      $this->statsd = new EmptyDependency();
-    /*
-      $this->logger->alert($e->__toString());
-    }
-    */
+    require_once(Config::FS_ROOT.'/vendor/autoload.php');
     require_once('Log.php');
     $this->logger = $this->_connectLogger();
 
@@ -490,8 +477,6 @@ class Application {
 
     $this->bindEvents();
 
-    $this->statsd->increment("hits");
-
     if (isset($_SESSION['id']) && is_numeric($_SESSION['id'])) {
       $this->user = new \SAT\User($this->dbs['ETI'], (int) $_SESSION['id']);
       // if user has not recently been active, update their last-active.
@@ -547,6 +532,8 @@ class Application {
     $controllerName = get_class($this->controller);
     $this->model = $controllerName::MODEL_NAME();
 
+    $this->view = $this->view();
+
     if (isset($_REQUEST['id'])) {
       if (is_numeric($_REQUEST['id'])) {
         $this->id = (int) $_REQUEST['id'];
@@ -571,7 +558,7 @@ class Application {
     if (!isset($_REQUEST['format']) || $_REQUEST['format'] === "") {
       $this->format = 'html';
     } else {
-      $this->format = escape_output($_REQUEST['format']);
+      $this->format = $this->view->escape($_REQUEST['format']);
     }
 
     try {
@@ -582,7 +569,6 @@ class Application {
         $this->target = new $this->model($this, $this->id);
       }
     } catch (DbException $e) {
-      $this->statsd->increment("DbException");
       $this->display_error(404);
     }
     if ($this->target->id === 0 && $this->action === "edit") {
@@ -599,8 +585,6 @@ class Application {
         ob_start();
           echo $this->controller->render($this->target)->render();
         echo ob_get_clean();
-        $this->statsd->timing("pageload", microtime(True) - $this->startRender);
-        $this->statsd->memory('memory.peakusage');
         $this->setPreviousUrl();
         exit;
       } catch (AppException $e) {
@@ -608,7 +592,6 @@ class Application {
         $this->clearOutput();
         $this->display_exception($e);
       } catch (Exception $e) {
-        $this->statsd->increment("Exception");
         $this->logger->err($e->__toString());
         $this->clearOutput();
         $this->display_error(500);
@@ -621,7 +604,7 @@ class Application {
     $params['accept-charset'] = isset($params['accept-charset']) ? $params['accept-charset'] : "UTF-8";
     $formAttrs = [];
     foreach ($params as $key=>$value) {
-      $formAttrs[] = escape_output($key)."='".escape_output($value)."'";
+      $formAttrs[] = $this->view->escape($key)."='".$this->view->escape($value)."'";
     }
     $formAttrs = implode(" ", $formAttrs);
     return "<form ".$formAttrs.">".$this->csrfInput()."\n";
@@ -633,7 +616,7 @@ class Application {
     $params['class'] = isset($params['class']) ? "form-control ".$params['class'] : "form-control";
     $inputAttrs = [];
     foreach ($params as $key=>$value) {
-      $inputAttrs[] = escape_output($key)."='".escape_output($value)."'";
+      $inputAttrs[] = $this->view->escape($key)."='".$this->view->escape($value)."'";
     }
     $inputAttrs = implode(" ", $inputAttrs);
     return "<input ".$inputAttrs." />";
@@ -648,10 +631,10 @@ class Application {
     }
     $inputAttrs = [];
     foreach ($params as $key=>$value) {
-      $inputAttrs[] = escape_output($key)."='".escape_output($value)."'";
+      $inputAttrs[] = $this->view->escape($key)."='".$this->view->escape($value)."'";
     }
     $inputAttrs = implode(" ", $inputAttrs);
-    return "<textarea ".$inputAttrs." >".escape_output($textValue)."</textarea>";
+    return "<textarea ".$inputAttrs." >".$this->view->escape($textValue)."</textarea>";
   }
   public function csrfInput() {
     return $this->input([
@@ -680,16 +663,6 @@ class Application {
                   ->append($view->copyAttrsTo($this->view('footer', $appVars)));
     return $completeView->render();
   }
-
-  // public function totalPoints() {
-  //   // total number of points earnable by users.
-  //   if ($this->totalPoints == Null) {
-  //     foreach ($this->achievements as $achievement) {
-  //       $this->totalPoints += $achievement->points;
-  //     }
-  //   }
-  //   return $this->totalPoints;
-  // }
   public function addTiming($name) {
     $this->timings[] = ['name' => $name, 'time' => microtime(true)];
   }

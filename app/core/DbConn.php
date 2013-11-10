@@ -165,6 +165,8 @@ class DbConn extends PDO {
       $queryList[] = "FROM";
     } elseif ($this->type === "INSERT") {
       $queryList[] = "INTO";
+    } elseif ($this->type === "TRUNCATE") {
+      $queryList[] = "TABLE";
     }
     $queryList[] = $this->table;
     $queryList[] = implode(" ", $this->joins);
@@ -246,6 +248,10 @@ class DbConn extends PDO {
     $this->query();
     $this->lastInsertId = parent::lastInsertId();
     return parent::commit();
+  }
+  public function truncate() {
+    $this->type = "TRUNCATE";
+    return $this->query();
   }
   public function firstRow() {
     // pulls the first row returned from the query.

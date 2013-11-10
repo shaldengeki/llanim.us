@@ -118,6 +118,209 @@ class TopicController extends \BaseController {
         }
         $resultView->attrs['terms'] = $terms;
         break;
+      case 'secret_santa':
+        $header->attrs['title'] = $header->attrs['subtitle'] = "Secret SATna";
+        if (isset($_POST['text'])) {
+          // parse entrant text.
+          $users = [];
+          $cantSendTo = [];
+          $cantRecieveFrom = [];
+
+          foreach (explode("\n", $_POST['text']) as $line) {
+            $lineSplit = explode(":", $line);
+            $sender = trim($lineSplit[0]);
+            $users[] = $sender;
+            if (!isset($cantRecieveFrom[$sender])) {
+              $cantRecieveFrom[$sender] = [];
+            }
+            if (!isset($cantSendTo[$sender])) {
+              $cantSendTo[$sender] = [];
+            }
+
+            if (count($lineSplit) > 1) {
+              // there are restrictions for this user.
+              foreach (explode(",", $lineSplit[1]) as $unsendable) {
+                $unsendable = trim($unsendable);
+                if (!isset($cantRecieveFrom[$unsendable])) {
+                  $cantRecieveFrom[$sender] = [$unsendable];
+                } else {
+                  $cantRecieveFrom[$sender][] = $unsendable;
+                }
+                if (!isset($cantSendTo[$unsendable])) {
+                  $cantSendTo[$unsendable] = [$sender];
+                } else {
+                  $cantSendTo[$unsendable][] = $sender;
+                }
+              }
+            }
+          }
+
+          // construct arrays listing who each user can send to and recieve from.
+          $canSendTo = [];
+          $canRecieveFrom = [];
+          foreach ($users as $recipient) {
+            $canSendTo[$recipient] = [];
+            foreach ($users as $sender) {
+              if ($recipient !== $sender) {
+                if (!in_array($sender, $cantSendTo[$recipient])) {
+                  $canSendTo[$recipient][] = $sender;
+                }
+                if (!in_array($recipient, $cantRecieveFrom[$sender])) {
+                  $canRecieveFrom[$sender][] = $recipient;
+                }
+              }
+            }
+          }
+
+          /*
+            match algorithm.
+            starting at i=1,
+            look for users who can either recieve from or send to i users. (i is the "capability" of the user)
+            if there exists a user at this capability, randomly pick a user from the corresponding array to recieve from or send to.
+              avoid making pairs of type A->B when B->A already exists
+              if there are no possible users, we have to start all over again!
+            then add these users as a sender=>recipient pair and remove the sender/recipient from their respective arrays.
+            continue, increasing "capabilities" until the number of pairs equals the number of users.
+          */
+          $originalCanSendTo = $canSendTo;
+          $originalCanRecieveFrom = $canRecieveFrom;
+          $attempts = 0;
+          while (True) {
+            $pairs = [];
+            $canSendTo = $originalCanSendTo;
+            $canRecieveFrom = $originalCanRecieveFrom;
+            $brokenMatches = False;
+            $capability=1;
+            // $this->app->logger->err("users:<pre>".print_r($users, True)."</pre>");
+            // $this->app->logger->err("canSendTo:<pre>".print_r($canSendTo, True)."</pre>");
+
+            $numUsers = count($users);
+
+            while (count($pairs) < $numUsers) {
+              foreach ($canSendTo as $recipient => $senders) {
+                $recipientCapability = count($senders);
+                if ($recipientCapability == $capability) {
+                  // $this->app->logger->err("Capability for recipient ".$recipient.": ".$recipientCapability);
+                  while (True) {
+                    // find the senders with the minimum capability and randomly assign one.
+                    $minSenderCapability = $numUsers;
+                    $potentialSenders = [];
+
+                    foreach ($senders as $potentialSender) {
+                      if (isset($canRecieveFrom[$potentialSender])) {
+                        $potentialCapability = count($canRecieveFrom[$potentialSender]);
+                        $this->app->logger->err("Sender ".$potentialSender." with capability ".$potentialCapability);
+
+                        if ($potentialCapability < $minSenderCapability) {
+                          $potentialSenders = [$potentialSender];
+                          $minSenderCapability = $potentialCapability;
+                        } elseif ($potentialCapability == $minSenderCapability) {
+                          $potentialSenders[] = $potentialSender;
+                        }
+                      }
+                    }
+                    if (!$potentialSenders) {
+                      // $this->app->logger->err("No potential senders for ".$recipient.". Breaking.");
+                      $brokenMatches = True;
+                      $pairedUsername = Null;
+                      break;
+                    }
+
+                    $this->app->logger->err("Potential senders for ".$recipient.": ".print_r($potentialSenders, True));
+
+                    $randomIndex = rand(0, count($potentialSenders)-1);
+                    $pairedUsername = $potentialSenders[$randomIndex];
+
+                    $this->app->logger->err("Selected sender for ".$recipient.": ".$pairedUsername);
+
+                    // if we have a choice in the matter, avoid pairs of the form A->B if B->A is already established.
+                    if (count($potentialSenders) > 1) {
+                      if (isset($pairs[$recipient]) && $pairs[$recipient] == $pairedUsername) {
+                        continue;
+                      }
+                    }
+
+                    if (isset($canRecieveFrom[$pairedUsername])) {
+                      break;
+                    }
+                  }
+
+                  $pairs[$pairedUsername] = $recipient;
+
+                  unset($canSendTo[$recipient]);
+                  unset($canRecieveFrom[$pairedUsername]);
+                }
+                // $this->app->logger->err("Pairs: <pre>".print_r($pairs, True)."</pre>");
+              }
+              // $this->app->logger->err("Pairs after half-cycle: <pre>".print_r($pairs, True)."</pre>");
+              // $this->app->logger->err("canSendTo after half-cycle: <pre>".print_r($canSendTo, True)."</pre>");
+              // $this->app->logger->err("canRecieveFrom after half-cycle: <pre>".print_r($canRecieveFrom, True)."</pre>");
+
+              foreach ($canRecieveFrom as $sender => $recipients) {
+                $senderCapability = count($recipients);
+                if ($senderCapability == $capability) {
+                  // $this->app->logger->err("Capability for sender ".$sender.": ".$senderCapability);
+                  while (True) {
+                    // find the recipients with the minimum capability and randomly assign one.
+                    $minRecipientCapability = $numUsers;
+                    $potentialRecipients = [];
+
+                    foreach ($recipients as $potentialRecipient) {
+                      if (isset($canSendTo[$potentialRecipient])) {
+                        $potentialCapability = count($canSendTo[$potentialRecipient]);
+                        if ($potentialCapability < $minRecipientCapability) {
+                          $potentialRecipients = [$potentialRecipient];
+                          $minRecipientCapability = $potentialCapability;
+                        } elseif ($potentialCapability == $minRecipientCapability) {
+                          $potentialRecipients[] = $potentialRecipient;
+                        }
+                      }
+                    }
+                    if (!$potentialRecipients) {
+                      // $this->app->logger->err("No potential recipients for ".$recipient.". Breaking.");
+                      $brokenMatches = True;
+                      $pairedUsername = Null;
+                      break;
+                    }
+
+                    // $this->app->logger->err("Potential senders for ".$sender.": ".print_r($potentialRecipients, True));
+
+                    $randomIndex = rand(0, count($potentialRecipients)-1);
+                    $pairedUsername = $potentialRecipients[$randomIndex];
+
+                    // if we have a choice in the matter, avoid pairs of the form A->B if B->A is already established.
+                    if (count($potentialRecipients) > 1) {
+                      if (isset($pairs[$pairedUsername]) && $pairs[$pairedUsername] == $sender) {
+                        continue;
+                      }
+                    }
+
+                    if (isset($canSendTo[$pairedUsername])) {
+                      break;
+                    }
+                  }
+
+                  $pairs[$sender] = $pairedUsername;
+
+                  unset($canRecieveFrom[$sender]);
+                  unset($canSendTo[$pairedUsername]);
+                }
+              }
+              // $this->app->logger->err("Pairs at the end of loop ".$capability.": <pre>".print_r($pairs, True)."</pre>");
+              $capability++;
+            }
+
+            $attempts++;
+            $this->app->logger->err("Broken matches: ".intval($brokenMatches));
+            if (!$brokenMatches) {
+              break;
+            }
+          }
+          $resultView->attrs['pairs'] = $pairs;
+          $resultView->attrs['text'] = $_POST['text'];
+        }
+
+        break;
       case 'index':
       default:
         $header->attrs['title'] = $header->attrs['subtitle'] = "Seasonal Anime Topics";

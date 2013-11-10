@@ -38,8 +38,6 @@ $app->initScript(Null, [
                         ]
                        ]);
 $view = new \View($app);
-
-//update with Tomoyo.
 echo "Updating SAT stats...\n";
 
 if (isset($app->cliOpts['remove'])) {
@@ -126,14 +124,17 @@ if (isset($app->cliOpts['new'])) {
                                     ->join(\ETI\User::FULL_TABLE_NAME($app).' ON '.\ETI\User::FULL_DB_FIELD_NAME($app, 'id').'='.\SAT\User::FULL_DB_FIELD_NAME($app, 'id'))
                                     ->join('sat_users_alts ON sat_users_alts.main_id='.\SAT\User::FULL_DB_FIELD_NAME($app, 'id'))
                                     ->join('sat_postcounts ON sat_postcounts.ll_userid=sat_users_alts.alt_id')
-                                    ->fields(\SAT\User::FULL_DB_FIELD_NAME($app, 'id'), 'username', 'SUM(sat_postcounts.posts) AS total_posts')
+                                    ->fields(\SAT\User::FULL_DB_FIELD_NAME($app, 'id'), 'SUM(sat_postcounts.posts) AS total_posts')
                                     ->group(\SAT\User::FULL_DB_FIELD_NAME($app, 'id'))
                                     ->order('total_posts DESC')
                                     ->query();
   $rank = 1;
   while ($old_poster = $oldRanksQuery->fetch()) {
-    $priorPostCounts[$old_poster['username']] = $old_poster['total_posts'];
-    $priorPostRanks[$rank] = $old_poster['username'];
+    $thisUser = \ETI\User::Get($app, [
+                                \ETI\User::DB_FIELD('id') => $old_poster[\SAT\User::DB_FIELD('id')]
+                               ]);
+    $priorPostCounts[$thisUser->name()] = $old_poster['total_posts'];
+    $priorPostRanks[$rank] = $thisUser->name();
     $rank++;
   }
   
@@ -237,8 +238,18 @@ if (isset($app->cliOpts['mal'])) {
           continue;
         }
         $listXML = new \Dom\Dom();
-        $listXML->loadXML('<?xml version="1.0" encoding="utf-8"?>'.$malList);
+        try {
+          $listXML->loadXML($malList);
+        } catch (ErrorException $e) {
+          echo '<?xml version="1.0" encoding="utf-8"?>'.$malList;
+          throw $e;
+        }
         $userInfoNode = $listXML->getElementsByTagName("myinfo")->item(0);
+
+        if (!($userInfoNode instanceof DOMNode)) {
+          echo "Error fetching MAL stats for user ".$user->mal_name.", skipping.\n";
+          continue;
+        }
 
         $time = (float) $userInfoNode->getElementsByTagName("user_days_spent_watching")->item(0)->textContent;
         $watching = (int) $userInfoNode->getElementsByTagName("user_watching")->item(0)->textContent;
@@ -288,15 +299,18 @@ if (isset($app->cliOpts['new'])) {
                                   ->join(\ETI\User::FULL_TABLE_NAME($app)." ON ".\ETI\User::FULL_DB_FIELD_NAME($app, 'id').'='.\SAT\User::FULL_DB_FIELD_NAME($app, 'id'))
                                   ->join('sat_users_alts ON sat_users_alts.main_id='.\SAT\User::FULL_DB_FIELD_NAME($app, 'id'))
                                   ->join('sat_postcounts ON sat_postcounts.ll_userid=sat_users_alts.alt_id')
-                                  ->fields(\SAT\User::FULL_DB_FIELD_NAME($app, 'id'), 'username', 'SUM(sat_postcounts.posts) AS total_posts')
+                                  ->fields(\SAT\User::FULL_DB_FIELD_NAME($app, 'id'), 'SUM(sat_postcounts.posts) AS total_posts')
                                   ->group(\SAT\User::FULL_DB_FIELD_NAME($app, 'id'))
                                   ->order('total_posts DESC')
                                   ->query();
   $rank = 1;
   $newPostRanks = [];
-  while ($postCount = $postRanksQuery->fetch()) {      
-    $newPostCounts[$postCount['username']] = $postCount['total_posts'];
-    $newPostRanks[$rank] = $postCount['username'];
+  while ($postCount = $postRanksQuery->fetch()) {
+    $thisUser = \ETI\User::Get($app, [
+                                   \ETI\User::DB_FIELD('id') => $postCount[\SAT\User::DB_FIELD('id')]
+                                   ]);
+    $newPostCounts[$thisUser->name()] = $postCount['total_posts'];
+    $newPostRanks[$rank] = $thisUser->name();
     $rank++;
 
     try {
@@ -315,19 +329,19 @@ if (isset($app->cliOpts['new'])) {
                                             ->limit(1)
                                             ->firstRow();
       if ($latestUserStats['time'] - $previousUserStats['time'] > 0) {
-        $time_array[$postCount['username']] = $latestUserStats['time'] - $previousUserStats['time'];
+        $time_array[$thisUser->name()] = $latestUserStats['time'] - $previousUserStats['time'];
       }
       if ($latestUserStats['watching'] > 0) {
-        $watching_array[$postCount['username']] = $latestUserStats['watching'];
+        $watching_array[$thisUser->name()] = $latestUserStats['watching'];
       }
       if ($latestUserStats['completed'] - $previousUserStats['completed'] > 0) {
-        $completed_array[$postCount['username']] = $latestUserStats['completed'] - $previousUserStats['completed'];
+        $completed_array[$thisUser->name()] = $latestUserStats['completed'] - $previousUserStats['completed'];
       }
       if ($latestUserStats['onhold'] - $previousUserStats['onhold'] > 0) {
-        $onhold_array[$postCount['username']] = $latestUserStats['onhold'] - $previousUserStats['onhold'];
+        $onhold_array[$thisUser->name()] = $latestUserStats['onhold'] - $previousUserStats['onhold'];
       }
       if ($latestUserStats['dropped'] - $previousUserStats['dropped'] > 0) {
-        $dropped_array[$postCount['username']] = $latestUserStats['dropped'] - $previousUserStats['dropped'];
+        $dropped_array[$thisUser->name()] = $latestUserStats['dropped'] - $previousUserStats['dropped'];
       }
     } catch (DbException $e) {
       // the user lacks either current or previous-topic MAL stats.
@@ -389,13 +403,15 @@ if (isset($app->cliOpts['new'])) {
   reset($dropped_array);
   
   if (count($time_array) > 0) {
-    $mal_activity_string .= "<b>Time wasted watching anime since last update:</b>\n";
+    $mal_activity_string = "<b>Since the last topic:</b>\n\n"
+    $mal_activity_string .= "<u>Time wasted:</u>\n";
     foreach ($time_array as $username=>$value) {
-      $mal_activity_string .= $username." wasted ".round($value*24*60)." minutes of his life.\n";
+      $mal_activity_string .= $username." wasted ".round($value*24*60)." minutes.\n";
     }
     $mal_activity_string .= "\n";
   }
   if (count($watching_array) > 0) {
+    $mal_activity_string .= "<u>Currently watching:</u>\n"
     $watching_user1 = key($watching_array);
     $watching_value1 = current($watching_array);
     if ($watching_value1 > 50) {
@@ -428,19 +444,19 @@ if (isset($app->cliOpts['new'])) {
   }
   if (count($completed_array) > 0) {
     foreach ($completed_array as $username=>$difference) {
-      $mal_activity_string .= $username." finished ".$difference." series since the last topic.\n";     
+      $mal_activity_string .= $username." finished ".$difference." series.\n";     
     }
     $mal_activity_string .= "\n";
   }
   if (count($onhold_array) > 0) {
     foreach ($onhold_array as $username=>$difference) {
-      $mal_activity_string .= $username." put ".$difference." series on hold since the last topic.\n";      
+      $mal_activity_string .= $username." put ".$difference." series on hold.\n";      
     }
     $mal_activity_string .= "\n";
   }
   if (count($dropped_array) > 0) {
     foreach ($dropped_array as $username=>$difference) {
-      $mal_activity_string .= $username." dropped ".$difference." series since the last topic.\n";      
+      $mal_activity_string .= $username." dropped ".$difference." series.\n";      
     }
   }
   if ($mal_activity_string != "") {

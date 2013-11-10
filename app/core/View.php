@@ -230,6 +230,51 @@ function drawChart() {
     return $this;
   }
 
+  public function form(array $params=Null) {
+    $params['method'] = isset($params['method']) ? $params['method'] : "post";
+    $params['accept-charset'] = isset($params['accept-charset']) ? $params['accept-charset'] : "UTF-8";
+    $formAttrs = [];
+    foreach ($params as $key=>$value) {
+      $formAttrs[] = $this->escape($key)."='".$this->escape($value)."'";
+    }
+    $formAttrs = implode(" ", $formAttrs);
+    return "<form ".$formAttrs.">".$this->csrfInput()."\n";
+  }
+  public function input(array $params=Null) {
+    if ($params == Null) {
+      $params = [];
+    }
+    $params['class'] = isset($params['class']) ? "form-control ".$params['class'] : "form-control";
+    $inputAttrs = [];
+    foreach ($params as $key=>$value) {
+      $inputAttrs[] = $this->escape($key)."='".$this->escape($value)."'";
+    }
+    $inputAttrs = implode(" ", $inputAttrs);
+    return "<input ".$inputAttrs." />";
+  }
+  public function textarea(array $params=Null, $textValue=Null) {
+    if ($params == Null) {
+      $params = [];
+    }
+    $params['class'] = isset($params['class']) ? "form-control ".$params['class'] : "form-control";
+    if ($textValue == Null) {
+      $textValue = "";
+    }
+    $inputAttrs = [];
+    foreach ($params as $key=>$value) {
+      $inputAttrs[] = $this->escape($key)."='".$this->escape($value)."'";
+    }
+    $inputAttrs = implode(" ", $inputAttrs);
+    return "<textarea ".$inputAttrs." >".$this->escape($textValue)."</textarea>";
+  }
+  public function csrfInput() {
+    return $this->input([
+      'type' => 'hidden',
+      'name' => $this->app->csrfField,
+      'value' => $this->app->csrfToken
+    ]);
+  }
+
   public function html($html=Null) {
     if ($html === Null) {
       // getter.

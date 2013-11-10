@@ -411,7 +411,7 @@ if (isset($app->cliOpts['new'])) {
     $mal_activity_string .= "\n";
   }
   if (count($watching_array) > 0) {
-    $mal_activity_string .= "<u>Currently watching:</u>\n"
+    $mal_activity_string .= "<u>Currently watching:</u>\n";
     $watching_user1 = key($watching_array);
     $watching_value1 = current($watching_array);
     if ($watching_value1 > 50) {

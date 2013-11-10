@@ -403,7 +403,7 @@ if (isset($app->cliOpts['new'])) {
   reset($dropped_array);
   
   if (count($time_array) > 0) {
-    $mal_activity_string = "<b>Since the last topic:</b>\n\n"
+    $mal_activity_string = "<b>Since the last topic:</b>\n\n";
     $mal_activity_string .= "<u>Time wasted:</u>\n";
     foreach ($time_array as $username=>$value) {
       $mal_activity_string .= $username." wasted ".round($value*24*60)." minutes.\n";

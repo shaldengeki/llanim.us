@@ -124,7 +124,13 @@ function drawChart() {
               break;
             case "object":
               if (get_class($seriesPoints[0][$seriesKey]) == "DateTime") {
-                $seriesProperties[$seriesKey]['type'] = "date";
+                // if difference between first two contiguous datetime points is less than a day, display datetime.
+                if (count($seriesPoints) > 1 && $seriesPoints[0][$seriesKey]->diff($seriesPoints[1][$seriesKey])->d == 0) {
+                  $seriesProperties[$seriesKey]['type'] = "datetime";
+                } else {
+                  // otherwise, just display date.
+                  $seriesProperties[$seriesKey]['type'] = "date";
+                }
               } else {
                 $seriesProperties[$seriesKey]['type'] = "number";
               }
@@ -162,7 +168,7 @@ function drawChart() {
           $seriesStrings[] = "'".$value."'";
         } elseif  ($seriesProperties[$seriesKey]['type'] == 'boolean') {
           $seriesStrings[] = boolean($value);
-        } elseif ($seriesProperties[$seriesKey]['type'] == 'date') {
+        } elseif (in_array($seriesProperties[$seriesKey]['type'], ['date', 'datetime'])) {
           $seriesStrings[] = "new Date(".$value->format('Y, ').(intval($value->format('n')) - 1).', '.$value->format('j, G, i').")";
         } else {
           if (is_integer($value)) {

@@ -51,7 +51,7 @@
       </tbody>
     </table>
   </div>
-  <div class='col-md-6 user-posts'>
+<!--   <div class='col-md-6 user-posts'>
     <h2>Recent posts:</h2>
 <?php
   foreach ($this->attrs['posts'] as $post) {
@@ -62,4 +62,4 @@
   }
 ?>
   </div>
-</div>
+ --></div>

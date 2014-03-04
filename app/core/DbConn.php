@@ -1,6 +1,6 @@
 <?php
 
-// DbConn.py
+// DbConn.php
 // Database ORM and insert queue classes.
 
 class DbException extends Exception {

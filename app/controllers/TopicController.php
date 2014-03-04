@@ -72,7 +72,7 @@ class TopicController extends \BaseController {
           'backgroundColor' => '#FFFFFF'
         ];
         $timelineSeriesProperties = [
-          'time' => ['title' => 'Time', 'type' => 'date'],
+          'time' => ['title' => 'Time', 'type' => 'datetime'],
           'count' => ['title' => 'Posts', 'type' => 'number']
         ];
         $footer->googleChart($timelineAttrs, $satTimeline, $timelineSeriesProperties);
@@ -97,9 +97,9 @@ class TopicController extends \BaseController {
             'change' => isset($prevCounts[$mainID]) ? $info['count'] - $prevCounts[$mainID]['count'] : $info['count']
           ];
           if ($authorInfo['user'] instanceof \SAT\User) {
-            $authorInfo['link'] = $this->link($info['user'], $resultView, 'show', Null, Null, Null, $info['user']->main()->name);
+            $authorInfo['link'] = $this->link($info['user']->main(), $resultView, 'show', Null, Null, Null, $info['user']->main()->name());
           } else {
-            $authorInfo['link'] = $info['user']->name;
+            $authorInfo['link'] = $info['user']->name();
           }
           $authors[$mainID] = $authorInfo;
         }
@@ -378,14 +378,14 @@ class TopicController extends \BaseController {
               $user = $info['user']->load('user');
               $authors[$user->id] = [
                 'user' => $user,
-                'link' => $this->link($user, $resultView, 'show', Null, Null, Null, $user->main()->name),
+                'link' => $this->link($user, $resultView, 'show', Null, Null, Null, $user->main()->name()),
                 'count' => (int) $info['count']
               ];
             } else {
               $user = $info['user']->load();
               $authors[$user->id] = [
                 'user' => $user,
-                'link' => $user->name,
+                'link' => $user->name(),
                 'count' => (int) $info['count']
               ];
             }

@@ -149,34 +149,53 @@ Array.min = function( array ){
 };
 
 function initDataTable(elt) {
-  // see if there's a default-sort column. if not, default to the first column.
-  defaultSortColumn = $(elt).find('thead > tr > th').index($(elt).find('thead > tr > th.dataTable-default-sort'));
-  if (defaultSortColumn == -1) {
-    defaultSortColumn = 0;
-    defaultSortOrder = "asc";
-  } else {
-    defaultSortOrder = $(elt).find('thead > tr > th.dataTable-default-sort').hasAttr("data-sort-order") ? $(elt).find('thead > tr > th.dataTable-default-sort').attr("data-sort-order") : "asc";
-  }
-  secondSortColumn = $(elt).find('thead > tr > th').index($(elt).find('thead > tr > th.dataTable-secondary-sort'));
-  if (secondSortColumn == -1) {
-    secondSortColumn = defaultSortColumn > 0 ? 0 : 1;
-    secondSortOrder = "asc";
-  } else {
-    secondSortOrder = $(elt).find('thead > tr > th.dataTable-secondary-sort').hasAttr("data-sort-order") ? $(elt).find('thead > tr > th.dataTable-secondary-sort').attr("data-sort-order") : "asc";
-  }
-  recordsPerPage = $(elt).hasAttr('data-recordsPerPage') ? $(elt).attr('data-recordsPerPage') : 25;
-  $(elt).dataTable({
+  var tableCols =  $(elt).find('thead > tr > th');
+  var tableProps = {
     "sDom": "<'row-fluid'<'span6'l><'span6'f>r>t<'row-fluid'<'span6'i><'span6'p>>",
     "sPaginationType": "bootstrap",
     "oLanguage": {
       "sLengthMenu": "_MENU_ records per page"
     },
-    "iDisplayLength": recordsPerPage,
+    "iDisplayLength": 25,
     "bPaginate": false,
     "bFilter": false,
     "bInfo": false,
-    "aaSorting": [[defaultSortColumn, defaultSortOrder], [secondSortColumn, secondSortOrder]]
-  });
+    "aaSorting": [[0, "asc"], [1, "asc"]]
+  };
+
+  // see if there's a default-sort column. if not, default to the first column.
+  var defaultSortColumn = tableCols.index($(elt).find('thead > tr > th.dataTable-default-sort'));
+  if (defaultSortColumn !== -1) {
+    defaultSortOrder = $(elt).find('thead > tr > th.dataTable-default-sort').hasAttr("data-sort-order") ? $(elt).find('thead > tr > th.dataTable-default-sort').attr("data-sort-order") : "asc";
+    tableProps['aaSorting'][0] = [defaultSortColumn, defaultSortOrder];
+  }
+  var secondSortColumn = tableCols.index($(elt).find('thead > tr > th.dataTable-secondary-sort'));
+  if (secondSortColumn !== -1) {
+    secondSortOrder = $(elt).find('thead > tr > th.dataTable-secondary-sort').hasAttr("data-sort-order") ? $(elt).find('thead > tr > th.dataTable-secondary-sort').attr("data-sort-order") : "asc";
+    tableProps['aaSorting'][1] = [secondSortColumn, secondSortOrder];
+  }
+  if ($(elt).hasAttr('data-recordsPerPage')) {
+    tableProps['iDisplayLength'] = $(elt).attr('data-recordsPerPage');
+  }
+  var rankColumn = tableCols.index($('thead > tr > th.dataTable-rank'));
+  if (rankColumn !== -1) {
+    // rank column.
+    tableProps['fnDrawCallback'] = function(oSettings) {
+      var that = this;
+      /* Need to redo the counters if filtered or sorted */
+      if (oSettings.bSorted || oSettings.bFiltered) {
+        this.$('td:first-child', {"filter":"applied"}).each( function (i) {
+          that.fnUpdate( i+1, this.parentNode, rankColumn, false, false );
+        });
+      }
+    };
+    tableProps['aoColumnDefs'] = [
+      {'bSortable': false, 'aTargets': [rankColumn]}
+    ];
+  }
+
+  // set table properties.
+  $(elt).dataTable(tableProps);
 }
 
 function displayListEditForm(elt) {

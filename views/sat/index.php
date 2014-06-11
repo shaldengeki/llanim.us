@@ -25,7 +25,7 @@
     <div class="media-body">
       <div class="panel panel-primary sat-<?php echo $sat['panelClass'] === Null ? $lastClass : $sat['panelClass']; ?>">
         <div class="panel-heading">
-          <h3 class="panel-title"><?php echo $sat['link']; ?></h3>
+          <h3 class="panel-title"><?php echo $sat['link']; ?> <small><?php echo $sat['eti_link']; ?></small></h3>
           <span class='sat-length pull-right'>
             <?php echo $satDuration->formatShort(); ?>
           </span>

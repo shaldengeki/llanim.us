@@ -87,5 +87,9 @@ class Topic extends \Model {
     }
     return $this->postCounts;
   }
+
+  public function etiLink($content="(ETI)") {
+    return '<a href="https://boards.endoftheinter.net/showmessages.php?topic='.intval($this->id).'">'.$content.'</a>';
+  }
 }
 ?>

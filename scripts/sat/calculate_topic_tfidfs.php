@@ -53,9 +53,9 @@ if (isset($app->cliOpts['clear-all']) || isset($app->cliOpts['clear-tfs'])) {
   // clear all extant tfs.
   echo "Clearing TFs.\n";
   $app->dbs['SAT']->table('sat_tfs')
-                  ->truncate();
+    ->truncate();
   $app->dbs['SAT']->table('sat_idfs')
-                  ->truncate();
+    ->truncate();
 }
 
 if (!isset($app->cliOpts['start'])) {
@@ -94,6 +94,7 @@ for ($i = 0; $i < $numSATs; $i++) {
   }
   //update database records for topic-specific IDFs each of these words.
   foreach ($corpus->dfs() as $term=>$df) {
+    $term = mb_substr($term, 0, 64);
     $topicQueue->insert(['term' => $term, 'll_topicid' => intval($sat->id), 'freq' => $df]);
     $satQueue->insert(['term' => $term, 'freq' => $df]);
   }
@@ -119,19 +120,19 @@ $sats = \SAT\Topic::GetList($app, [
 
 // get total postcount across all SATs.
 $postCount = $app->dbs['SAT']->table(\SAT\Topic::FULL_TABLE_NAME($app))
-                              ->fields('COUNT(*)')
-                              ->join(\ETI\Post::FULL_TABLE_NAME($app).' ON '.\ETI\Post::FULL_DB_FIELD_NAME($app, 'topic_id').' = '.\SAT\Topic::FULL_DB_FIELD_NAME($app, 'id'))
-                              ->where([
-                                      \SAT\Topic::FULL_DB_FIELD_NAME($app, 'completed') => 1
-                                      ])
-                              ->count();
+  ->fields('COUNT(*)')
+  ->join(\ETI\Post::FULL_TABLE_NAME($app).' ON '.\ETI\Post::FULL_DB_FIELD_NAME($app, 'topic_id').' = '.\SAT\Topic::FULL_DB_FIELD_NAME($app, 'id'))
+  ->where([
+          \SAT\Topic::FULL_DB_FIELD_NAME($app, 'completed') => 1
+          ])
+  ->count();
 // get global term frequencies.
 $globalDFs = $app->dbs['SAT']->table('sat_idfs')
-                              ->fields('term', 'freq')
-                              ->assoc('term', 'freq');
+  ->fields('term', 'freq')
+  ->assoc('term', 'freq');
 $satsCorpus = new Corpus();
 $satsCorpus->dfs($globalDFs)
-            ->length($postCount);
+  ->length($postCount);
 
 // loop over all sats.
 $numSATs = count($sats);
@@ -140,14 +141,15 @@ for ($i = 0; $i < $numSATs; $i++) {
   $sat = $sats[$i];
   echo "Processing SAT ".intval($sat->id)." TF-IDFs.\n";
   $tfs = $app->dbs['SAT']->table('sat_tfs')
-                          ->fields('term', 'freq')
-                          ->where([
-                                  'll_topicid' => intval($sat->id)
-                                  ])
-                          ->assoc('term', 'freq');
+    ->fields('term', 'freq')
+    ->where([
+            'll_topicid' => intval($sat->id)
+            ])
+    ->assoc('term', 'freq');
   $satDoc = new Document("");
   $satDoc->corpus($satsCorpus)->tfs($tfs);
   foreach ($satDoc->tfidfs() as $term=>$tfidf) {
+    $term = mb_substr($term, 0, 64);
     $satQueue->insert(['ll_topicid' => intval($sat->id), 'term' => $term, 'tfidf' => $tfidf]);
   }
   unset($sats[$i]);

@@ -17,6 +17,7 @@
     <table class='table table-striped table-bordered dataTable'>
       <thead>
         <tr>
+          <th class='dataTable-rank'>Rank</th>
           <th>Author</th>
           <th class='dataTable-default-sort' data-sort-order='desc'>Posts</th>
           <th>Change</th>
@@ -27,6 +28,7 @@
   foreach ($this->attrs['authors'] as $author) {
 ?>
         <tr>
+          <td></td>
           <td><?php echo $author['link']; ?></td>
           <td><?php echo $author['count']; ?></td>
           <td><?php echo $author['change']; ?></td>
@@ -42,6 +44,7 @@
     <table class='table table-striped table-bordered dataTable'>
       <thead>
         <tr>
+          <th class='dataTable-rank'>Rank</th>
           <th>Topic</th>
           <th class='dataTable-default-sort' data-sort-order='desc'><a href='https://en.wikipedia.org/wiki/TF_IDF'>Prominence</a></th>
           <th>Change</th>
@@ -52,6 +55,7 @@
   foreach ($this->attrs['terms'] as $term) {
 ?>
         <tr>
+          <td></td>
           <td><?php echo $term['link']; ?></td>
           <td><?php echo $term['tfidf']; ?></td>
           <td><?php echo $term['change']; ?></td>

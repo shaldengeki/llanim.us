@@ -391,7 +391,7 @@ class TopicController extends \BaseController {
             }
           }
           $terms = [];
-          foreach ($sat->getTerms(10) as $term=>$tfidf) {
+          foreach ($sat->getTerms(5) as $term=>$tfidf) {
             $termObj = new \Term\Term($this->app, $term);
             $terms[$term] = [
               'link' => $this->link($termObj, $resultView, 'show', Null, Null, Null, $term),
@@ -403,6 +403,7 @@ class TopicController extends \BaseController {
             'terms' => $terms,
             'authors' => $authors,
             'link' => $this->link($sat, $resultView, 'show', Null, Null, Null, $sat->topic->title), 
+            'eti_link' => $sat->etiLink('(ETI)'),
             'panelClass' => $panelClass
           ];
           $currSAT--;
